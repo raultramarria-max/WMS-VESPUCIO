@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#0d0f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>BODEGA MÓVIL — Quinta</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root{
+  --bg:#0d0f14;--surface:#151820;--card:#1c2030;--border:#2a3045;
+  --gold:#f0b429;--red:#e63946;--green:#2ec4b6;--blue:#6eb5ff;
+  --text:#e8eaf0;--muted:#6b7280;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;font-size:15px;
+     display:flex;flex-direction:column;overscroll-behavior:none}
+
+/* ── HEADER ── */
+header{background:var(--surface);border-bottom:2px solid var(--gold);padding:calc(8px + env(safe-area-inset-top)) 14px 8px;
+       display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0}
+.brand{font-family:'Bebas Neue';font-size:21px;letter-spacing:2px;color:var(--gold);line-height:1}
+.brand small{display:block;font-family:'Inter';font-size:9px;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.conn{display:flex;align-items:center;gap:6px;font-size:10px;font-family:'JetBrains Mono';color:var(--muted)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--muted);flex-shrink:0}
+.dot.on{background:var(--green);box-shadow:0 0 8px var(--green)}
+.dot.off{background:var(--red)}
+.dot.pend{background:var(--gold);animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.25}}
+.who{background:none;border:1px solid var(--border);color:var(--muted);border-radius:4px;
+     padding:4px 8px;font-size:10px;font-family:'JetBrains Mono';cursor:pointer}
+
+/* ── TABS ── */
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.tab{padding:10px 2px 9px;text-align:center;border:none;background:none;color:var(--muted);
+     font-family:'Inter';font-size:10px;font-weight:600;letter-spacing:.5px;cursor:pointer;
+     border-bottom:3px solid transparent;transition:color .15s,border-color .15s}
+.tab .ic{display:block;font-size:19px;margin-bottom:2px;line-height:1}
+.tab.active{color:var(--gold);border-bottom-color:var(--gold)}
+
+/* ── CONTENIDO ── */
+main{flex:1;overflow-y:auto;padding:14px;padding-bottom:calc(24px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.panel{display:none;flex-direction:column;gap:12px}
+.panel.active{display:flex}
+
+.step{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 14px}
+.step.done{border-color:var(--green)}
+.step.wait{opacity:.45}
+.step-hdr{display:flex;align-items:center;gap:8px;margin-bottom:9px}
+.step-n{width:21px;height:21px;border-radius:50%;background:var(--border);color:var(--text);
+        font-family:'JetBrains Mono';font-size:11px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step.done .step-n{background:var(--green);color:#0d0f14}
+.step-hdr h3{font-family:'Bebas Neue';font-size:15px;letter-spacing:1.5px;color:var(--gold);font-weight:400}
+
+.scanbtn{width:100%;padding:16px;border:none;border-radius:9px;background:var(--gold);color:#0d0f14;
+         font-family:'Bebas Neue';font-size:20px;letter-spacing:2px;cursor:pointer;display:flex;
+         align-items:center;justify-content:center;gap:9px}
+.scanbtn:active{transform:scale(.98)}
+.scanbtn.ghost{background:transparent;color:var(--gold);border:2px solid var(--gold)}
+.scanbtn.red{background:var(--red);color:#fff}
+.scanbtn.green{background:var(--green);color:#0d0f14}
+.scanbtn:disabled{opacity:.3;pointer-events:none}
+
+.captured{font-family:'JetBrains Mono';font-size:19px;font-weight:600;color:var(--green);
+          text-align:center;padding:11px;background:rgba(46,196,182,.09);border-radius:7px;
+          margin-bottom:9px;word-break:break-all;letter-spacing:1px}
+.captured.empty{color:var(--muted);font-size:13px;background:transparent;border:1px dashed var(--border);letter-spacing:0}
+
+label.fl{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin:9px 0 4px}
+input,select,textarea{width:100%;padding:11px 12px;background:var(--surface);border:1.5px solid var(--border);
+       border-radius:7px;color:var(--text);font-family:'JetBrains Mono';font-size:16px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--gold)}
+textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+
+.qtybox{display:flex;align-items:center;gap:9px}
+.qtybox input{text-align:center;font-size:26px;font-weight:600;padding:9px}
+.qtybtn{width:52px;height:52px;flex-shrink:0;border-radius:9px;border:1.5px solid var(--border);
+        background:var(--surface);color:var(--gold);font-size:26px;cursor:pointer;line-height:1}
+.qtybtn:active{background:var(--card)}
+
+.zbadge{display:inline-block;padding:3px 9px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:1px}
+.z-F{background:#1e3a3a;color:#2ec4b6;border:1px solid #2ec4b6}
+.z-C{background:#1a2b3d;color:#6eb5ff;border:1px solid #6eb5ff}
+.z-A{background:#2a2a1e;color:#f0b429;border:1px solid #f0b429}
+.z-X{background:#2a1e1e;color:#e63946;border:1px solid #e63946}
+
+.rcard{background:var(--card);border-radius:9px;padding:11px 13px;border-left:3px solid var(--gold)}
+.rcard h4{font-family:'JetBrains Mono';font-size:15px;color:var(--gold);margin-bottom:7px;letter-spacing:1px}
+.rrow{display:flex;justify-content:space-between;gap:10px;margin:4px 0;font-size:12px}
+.rrow .lbl{color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.5px;flex-shrink:0}
+.rrow .val{font-family:'JetBrains Mono';text-align:right;word-break:break-word}
+.venc-ok{color:var(--green)}.venc-warn{color:var(--gold)}.venc-bad{color:var(--red)}
+
+.hint{font-size:11px;color:var(--muted);line-height:1.55}
+.ocup{margin:-3px 0 9px;padding:8px 10px;border-radius:7px;font-size:11.5px;line-height:1.5}
+.ocup.libre{background:rgba(46,196,182,.1);color:var(--green);border:1px solid rgba(46,196,182,.35)}
+.ocup.usada{background:rgba(240,180,41,.1);color:var(--gold);border:1px solid rgba(240,180,41,.35)}
+.ocup b{font-family:'JetBrains Mono'}
+.bloqueo{margin:9px 0 3px;padding:12px 13px;border-radius:8px;background:rgba(230,57,70,.13);
+         border:1.5px solid var(--red);font-size:12px;line-height:1.6}
+.bloqueo h5{font-family:'Bebas Neue';font-size:16px;letter-spacing:1.5px;color:var(--red);margin-bottom:5px}
+.bloqueo b{font-family:'JetBrains Mono';color:var(--text)}
+.bloqueo .sug{margin-top:8px;padding-top:8px;border-top:1px solid rgba(230,57,70,.3);color:var(--muted);font-size:11px}
+.bloqueo .sug b{color:var(--green)}
+.empty{text-align:center;color:var(--muted);padding:30px 14px;font-size:13px;line-height:1.6}
+
+.log-item{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--card);border-radius:7px;margin-bottom:5px}
+.log-tag{font-family:'JetBrains Mono';font-size:9px;font-weight:600;padding:3px 6px;border-radius:3px;flex-shrink:0}
+.tag-IN{background:#1e3a3a;color:#2ec4b6}
+.tag-OUT{background:#3d1418;color:#e63946}
+.tag-CNT{background:#2a2a1e;color:#f0b429}
+.log-body{flex:1;min-width:0;font-size:11px}
+.log-body b{font-family:'JetBrains Mono';font-size:12px;display:block}
+.log-body span{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.log-qty{font-family:'JetBrains Mono';font-size:13px;font-weight:600}
+
+/* ── SCANNER OVERLAY ── */
+#scanner{position:fixed;inset:0;background:#000;z-index:900;display:none;flex-direction:column}
+#scanner.open{display:flex}
+#cam{flex:1;width:100%;object-fit:cover;background:#000}
+.scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+            width:78%;max-width:330px;height:150px;border:3px solid var(--gold);border-radius:12px;
+            box-shadow:0 0 0 3000px rgba(0,0,0,.5);pointer-events:none}
+.scan-frame::after{content:'';position:absolute;left:6px;right:6px;top:50%;height:2px;
+                   background:var(--red);box-shadow:0 0 10px var(--red);animation:sweep 2s ease-in-out infinite}
+@keyframes sweep{0%,100%{top:8%}50%{top:92%}}
+.scan-top{position:absolute;top:calc(12px + env(safe-area-inset-top));left:0;right:0;text-align:center;
+          color:#fff;font-family:'Bebas Neue';font-size:19px;letter-spacing:2px;z-index:5;text-shadow:0 2px 8px #000}
+.scan-bottom{position:absolute;bottom:calc(16px + env(safe-area-inset-bottom));left:14px;right:14px;z-index:5;display:flex;flex-direction:column;gap:9px}
+.scan-manual{display:flex;gap:8px}
+.scan-manual input{background:rgba(21,24,32,.94);border-color:var(--gold)}
+.scan-manual button{padding:0 17px;border:none;border-radius:7px;background:var(--gold);color:#0d0f14;font-weight:700;cursor:pointer}
+.scan-close{padding:13px;border:none;border-radius:9px;background:rgba(230,57,70,.92);color:#fff;
+            font-family:'Bebas Neue';font-size:17px;letter-spacing:2px;cursor:pointer}
+#scan-err{position:absolute;top:50%;left:14px;right:14px;transform:translateY(-50%);z-index:6;
+          background:var(--card);border:1px solid var(--red);border-radius:9px;padding:14px;
+          font-size:12px;line-height:1.6;display:none}
+
+/* ── TOAST ── */
+#toast{position:fixed;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));z-index:950;
+       padding:14px 16px;border-radius:10px;font-weight:600;font-size:14px;text-align:center;
+       transform:translateY(160%);transition:transform .25s cubic-bezier(.2,1.3,.5,1);box-shadow:0 10px 30px rgba(0,0,0,.6)}
+#toast.show{transform:translateY(0)}
+#toast.ok{background:var(--green);color:#0d0f14}
+#toast.err{background:var(--red);color:#fff}
+#toast.info{background:var(--gold);color:#0d0f14}
+
+/* ── MODAL CONFIG ── */
+.ov{position:fixed;inset:0;background:rgba(0,0,0,.86);z-index:800;display:none;align-items:center;justify-content:center;padding:16px}
+.ov.open{display:flex}
+.ov-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;width:100%;max-width:460px;max-height:88vh;overflow-y:auto}
+.ov-box h2{font-family:'Bebas Neue';font-size:20px;color:var(--gold);letter-spacing:2px;margin-bottom:10px}
+/* ── SELECTOR DE MODO ── */
+.modo-sel{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px}
+.modo-op{background:var(--surface);border:2px solid var(--border);border-radius:9px;padding:11px 9px;
+         color:var(--muted);cursor:pointer;text-align:left;font-family:inherit}
+.modo-op b{display:block;font-family:'Bebas Neue';font-size:15px;letter-spacing:1px;margin-bottom:2px}
+.modo-op small{font-size:10px;line-height:1.35;display:block}
+.modo-op.on{border-color:var(--gold);color:var(--text);background:rgba(240,180,41,.08)}
+.modo-op.on b{color:var(--gold)}
+.lc-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:11px 13px;margin:11px 0}
+.lc-row{display:flex;justify-content:space-between;align-items:center;font-size:12px;
+        color:var(--muted);padding:3px 0}
+.lc-row b{font-family:'JetBrains Mono';font-size:15px;color:var(--gold)}
+
+/* ── TECLADO NUMÉRICO ── */
+#kp{z-index:880}
+#kp .ov-box{max-width:400px;padding:16px}
+.kp-hd{border-left:3px solid var(--gold);padding-left:10px;margin-bottom:12px}
+.kp-hd h2{margin-bottom:2px}
+.kp-hd .sku{font-family:'JetBrains Mono';font-size:15px;color:var(--text);font-weight:700}
+.kp-hd .sub{font-size:11px;color:var(--muted);line-height:1.5;margin-top:2px}
+.kp-ref{display:flex;justify-content:space-between;align-items:center;background:var(--surface);
+        border:1px solid var(--border);border-radius:7px;padding:8px 11px;margin-bottom:9px;font-size:11px;color:var(--muted)}
+.kp-ref b{font-family:'JetBrains Mono';font-size:15px}
+.kp-disp{background:var(--bg);border:2px solid var(--border);border-radius:9px;padding:10px 14px;margin-bottom:5px;
+         text-align:right;font-family:'JetBrains Mono';font-size:38px;font-weight:700;color:var(--text);
+         min-height:62px;display:flex;align-items:center;justify-content:flex-end;transition:border-color .15s}
+.kp-disp.empty{color:var(--muted)}
+.kp-disp.bad{border-color:var(--red);color:var(--red)}
+.kp-msg{font-size:11px;min-height:15px;margin-bottom:9px;text-align:right;color:var(--muted)}
+.kp-msg.bad{color:var(--red);font-weight:600}
+.kp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.kp-k{background:var(--card);border:1px solid var(--border);border-radius:9px;color:var(--text);
+      font-family:'JetBrains Mono';font-size:23px;font-weight:700;padding:15px 0;cursor:pointer;
+      -webkit-tap-highlight-color:transparent;transition:background .1s}
+.kp-k:active{background:var(--gold);color:#0d0f14;transform:scale(.96)}
+.kp-k.fn{font-size:15px;color:var(--muted)}
+.kp-quick{background:none;border:1px dashed var(--border);border-radius:7px;color:var(--gold);
+          font-size:11px;padding:8px;width:100%;margin-top:9px;cursor:pointer;font-weight:600}
+.kp-act{display:grid;grid-template-columns:1fr 1.4fr;gap:8px;margin-top:11px}
+.kp-act button{padding:15px 0;border-radius:9px;font-family:'Bebas Neue';font-size:17px;letter-spacing:1.5px;
+               border:none;cursor:pointer}
+.kp-ok{background:var(--green);color:#0d0f14}
+.kp-ok.red{background:var(--red);color:#fff}
+.kp-ok:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+.kp-no{background:none;border:1px solid var(--border)!important;color:var(--muted)}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">📱 BODEGA MÓVIL<small>Quinta — captura en piso</small></div>
+  <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+    <div class="conn"><span class="dot" id="conn-dot"></span><span id="conn-txt">iniciando…</span></div>
+    <button class="who" id="btn-cfg">👤 <span id="who-txt">—</span></button>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" data-panel="ingreso"><span class="ic">📥</span>INGRESO</button>
+  <button class="tab" data-panel="consulta"><span class="ic">🔎</span>CONSULTA</button>
+  <button class="tab" data-panel="salida"><span class="ic">📤</span>SALIDA</button>
+  <button class="tab" data-panel="conteo"><span class="ic">🧮</span>CONTEO</button>
+</div>
+
+<main>
+
+  <!-- ══════════ INGRESO ══════════ -->
+  <section class="panel active" id="p-ingreso">
+    <div class="step" id="in-s1">
+      <div class="step-hdr"><span class="step-n">1</span><h3>Escanear ubicación</h3></div>
+      <div class="captured empty" id="in-ubic">sin ubicación</div>
+      <div id="in-ocup"></div>
+      <button class="scanbtn" data-scan="in-ubic-scan">📷 ESCANEAR UBICACIÓN</button>
+    </div>
+
+    <div class="step wait" id="in-s2">
+      <div class="step-hdr"><span class="step-n">2</span><h3>Escanear SKU</h3></div>
+      <div class="captured empty" id="in-sku">sin SKU</div>
+      <div id="in-alert"></div>
+      <button class="scanbtn ghost" data-scan="in-sku-scan">📷 ESCANEAR SKU</button>
+      <label class="fl">Descripción</label>
+      <input id="in-desc" placeholder="Nombre del producto">
+    </div>
+
+    <div class="step wait" id="in-s3">
+      <div class="step-hdr"><span class="step-n">3</span><h3>Datos del pallet</h3></div>
+      <label class="fl">Cantidad</label>
+      <div class="qtybox">
+        <button class="qtybtn" data-qty="in-cant:-1">−</button>
+        <input type="number" id="in-cant" inputmode="numeric" value="1" min="0">
+        <button class="qtybtn" data-qty="in-cant:1">+</button>
+      </div>
+      <label class="fl">Lote</label>
+      <input id="in-lote" placeholder="L240601">
+      <div class="grid2">
+        <div><label class="fl">F. elaboración</label><input type="date" id="in-elab"></div>
+        <div><label class="fl">F. vencimiento</label><input type="date" id="in-venc"></div>
+      </div>
+      <label class="fl">Comentario</label>
+      <textarea id="in-comt" placeholder="Opcional"></textarea>
+      <div style="height:12px"></div>
+      <button class="scanbtn green" id="in-save">✓ GUARDAR EN LA POSICIÓN</button>
+      <p class="hint" style="margin-top:9px" id="in-hint">Las posiciones son <b>multiproducto</b>: pueden convivir varios SKU y varios lotes. Si ya existe ese mismo SKU y lote aquí, la cantidad se suma.</p>
+    </div>
+
+    <div id="in-log"></div>
+  </section>
+
+  <!-- ══════════ CONSULTA ══════════ -->
+  <section class="panel" id="p-consulta">
+    <div class="step">
+      <div class="step-hdr"><span class="step-n">🔎</span><h3>Buscar ubicación o SKU</h3></div>
+      <input id="cs-q" placeholder="A-B-07-3-2  ·  MP-001  ·  texto" autocomplete="off">
+      <div style="height:10px"></div>
+      <button class="scanbtn" data-scan="cs-scan">📷 ESCANEAR PARA CONSULTAR</button>
+    </div>
+    <div id="cs-out"><div class="empty">Escanea una etiqueta de ubicación o de producto para ver qué hay registrado.</div></div>
+  </section>
+
+  <!-- ══════════ SALIDA ══════════ -->
+  <section class="panel" id="p-salida">
+    <div class="step">
+      <div class="step-hdr"><span class="step-n">1</span><h3>Escanear ubicación</h3></div>
+      <div class="captured empty" id="ot-ubic">sin ubicación</div>
+      <button class="scanbtn red" data-scan="ot-ubic-scan">📷 ESCANEAR UBICACIÓN</button>
+    </div>
+    <div id="ot-list"><div class="empty">Escanea la posición desde la que vas a retirar producto.</div></div>
+  </section>
+
+  <!-- ══════════ CONTEO ══════════ -->
+  <section class="panel" id="p-conteo">
+    <div class="step">
+      <div class="step-hdr"><span class="step-n">1</span><h3>Inventario cíclico</h3></div>
+      <div class="captured empty" id="ct-ubic">sin ubicación</div>
+      <button class="scanbtn" data-scan="ct-ubic-scan">📷 ESCANEAR UBICACIÓN</button>
+      <p class="hint" style="margin-top:9px">Cuenta lo que ves en la posición y ajusta. Toda diferencia queda registrada con tu nombre y la hora.</p>
+    </div>
+    <div id="ct-list"></div>
+    <div class="step" id="ct-sum" style="display:none">
+      <div class="step-hdr"><span class="step-n">Σ</span><h3>Diferencias de la sesión</h3></div>
+      <div id="ct-diffs"></div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ══════════ SCANNER ══════════ -->
+<div id="scanner">
+  <div class="scan-top" id="scan-title">ESCANEAR</div>
+  <video id="cam" playsinline muted autoplay></video>
+  <div class="scan-frame"></div>
+  <div id="scan-err"></div>
+  <div class="scan-bottom">
+    <div class="scan-manual">
+      <input id="scan-manual-in" placeholder="…o escribe el código" autocomplete="off" autocapitalize="characters">
+      <button id="scan-manual-ok">OK</button>
+    </div>
+    <button class="scan-close" id="scan-close">✕ CERRAR</button>
+  </div>
+</div>
+
+<!-- ══════════ CONFIG ══════════ -->
+<div class="ov" id="kp">
+  <div class="ov-box">
+    <div class="kp-hd">
+      <h2 id="kp-tit">CANTIDAD</h2>
+      <div class="sku" id="kp-sku">—</div>
+      <div class="sub" id="kp-sub">—</div>
+    </div>
+    <div class="kp-ref" id="kp-ref"><span id="kp-ref-l">—</span><b id="kp-ref-v">0</b></div>
+    <div class="kp-disp empty" id="kp-disp">—</div>
+    <div class="kp-msg" id="kp-msg"></div>
+    <div class="kp-grid">
+      <button class="kp-k" data-d="1">1</button><button class="kp-k" data-d="2">2</button><button class="kp-k" data-d="3">3</button>
+      <button class="kp-k" data-d="4">4</button><button class="kp-k" data-d="5">5</button><button class="kp-k" data-d="6">6</button>
+      <button class="kp-k" data-d="7">7</button><button class="kp-k" data-d="8">8</button><button class="kp-k" data-d="9">9</button>
+      <button class="kp-k fn" id="kp-clr">C</button><button class="kp-k" data-d="0">0</button><button class="kp-k fn" id="kp-del">⌫</button>
+    </div>
+    <button class="kp-quick" id="kp-quick" style="display:none"></button>
+    <div class="kp-act">
+      <button class="kp-no" id="kp-cancel">CANCELAR</button>
+      <button class="kp-ok" id="kp-ok" disabled>CONFIRMAR</button>
+    </div>
+  </div>
+</div>
+
+<div class="ov" id="cfg">
+  <div class="ov-box">
+    <h2>Configuración</h2>
+    <label class="fl">Tu nombre (queda en cada movimiento)</label>
+    <input id="cfg-user" placeholder="Ej: Eduardo">
+
+    <label class="fl">Cómo trabaja este teléfono</label>
+    <div class="modo-sel">
+      <button class="modo-op" data-modo="local">
+        <b>SIN INTERNET</b><small>Guarda aquí y tú envías el archivo al final del turno</small></button>
+      <button class="modo-op" data-modo="nube">
+        <b>EN LÍNEA</b><small>Todo se sincroniza solo (necesita Firebase)</small></button>
+    </div>
+
+    <div id="bloque-local">
+      <div class="lc-box">
+        <div class="lc-row"><span>Inventario cargado en este teléfono</span><b id="lc-inv">0</b></div>
+        <div class="lc-row"><span>Movimientos sin enviar</span><b id="lc-movs">0</b></div>
+        <div class="lc-row" id="lc-fecha-row"><span>Base cargada el</span><b id="lc-fecha">—</b></div>
+      </div>
+      <label class="fl">1 · Cargar la base que exportó el dashboard</label>
+      <input type="file" id="lc-file" accept=".json,application/json" style="padding:9px;font-size:12px">
+      <div style="height:11px"></div>
+      <label class="fl">2 · Al terminar el turno, enviar lo capturado</label>
+      <button class="scanbtn" id="lc-export">📤 DESCARGAR MOVIMIENTOS</button>
+      <p class="hint" style="margin-top:7px">Se guarda en las descargas del teléfono. Adjúntalo
+        a un correo y mándalo a la oficina. Al descargarlo <b>no se borra nada</b>: los
+        movimientos siguen aquí hasta que los marques como enviados.</p>
+      <div style="height:8px"></div>
+      <button class="scanbtn ghost" id="lc-clear">✓ YA LOS ENVIÉ — LIMPIAR</button>
+    </div>
+
+    <div id="bloque-nube">
+    <label class="fl">Firebase — projectId</label>
+    <input id="cfg-pid" placeholder="bodega-quinta">
+    <label class="fl">Firebase — apiKey</label>
+    <input id="cfg-key" placeholder="AIza…">
+    <label class="fl">Firebase — appId</label>
+    <input id="cfg-app" placeholder="1:123…:web:abc…">
+    <p class="hint" style="margin-top:10px">Estos 3 datos salen de Firebase → Configuración del proyecto → Tus apps → Web. Se guardan solo en este teléfono.</p>
+    </div>
+    <div style="height:14px"></div>
+    <button class="scanbtn green" id="cfg-save">GUARDAR</button>
+    <div style="height:8px"></div>
+    <button class="scanbtn ghost" id="cfg-close">Cerrar</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+// ═══════════════════════════════════════════════════════════════════════
+//  CONFIGURACIÓN FIREBASE
+//  Opción A: pega tus datos aquí y súbelo a GitHub Pages (todos lo usan).
+//  Opción B: déjalo vacío y cada equipo los carga desde el botón 👤.
+// ═══════════════════════════════════════════════════════════════════════
+const FB_HARDCODED = {
+  apiKey:    "",
+  projectId: "",
+  appId:     ""
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+//  REGLA DE OCUPACIÓN DE POSICIONES
+//  'LIBRE'         → multiproducto: varios SKU y varios lotes por posición (ACTUAL)
+//  'MONO_SKU'      → un solo SKU por posición, varios lotes de ese SKU
+//  'MONO_SKU_LOTE' → un solo SKU y un solo lote por posición
+//  Debe coincidir con el REGLA_POSICION del dashboard.
+// ═══════════════════════════════════════════════════════════════════════
+const REGLA_POSICION = 'LIBRE';
+const reglaEstricta = () => REGLA_POSICION !== 'LIBRE';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════════════════════════════════════
+const S = {
+  inventario: [],          // [{id, ubicacion, sku, descripcion, cantidad, lote, ...}]
+  user: localStorage.getItem('bq_user') || '',
+  db: null, fb: null,
+  scanTarget: null,
+  ingreso: { ubic:'', sku:'' },
+  salida:  { ubic:'' },
+  conteo:  { ubic:'', diffs:[] },
+  log: [],
+  modo: localStorage.getItem('bq_modo') || 'local',   // 'local' | 'nube'
+  movs: []                                            // movimientos por enviar (solo modo local)
+};
+
+const $  = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+// ═══════════════════════════════════════════════════════════════════════
+//  UBICACIONES · ZONA-FILA-COLUMNA-NIVEL-PROFUNDIDAD  (ej. A-B-07-3-2)
+// ═══════════════════════════════════════════════════════════════════════
+const ZLABEL = { F:'❄ REFRIGERADO', C:'🧊 CONGELADO', A:'🌡 AMBIENTE' };
+
+// ── ESTRUCTURA FÍSICA — debe ser idéntica a la del dashboard ────────
+//   AMB : 6 filas de 4 niveles, 5 posiciones de largo (la F solo 1).
+//         Fila A → P1-P2 | Fila B → P3-P4 | Filas C y D → P1-P4
+//         Fila E → P1-P2 | Fila F → 1 columna, P1-P4
+//   FRÍO / CONGELADO : 6 filas, 8 posiciones, 4 niveles, P1-P4.
+const rng = n => Array.from({length:n}, (_,i) => i+1);
+const filasIguales = (ids, cols, profs) => ids.map(id => ({ id, cols, profs }));
+const LAYOUT = {
+  F:{ niveles:4, filas: filasIguales(['A','B','C','D','E','F'], 8, rng(4)) },
+  C:{ niveles:4, filas: filasIguales(['A','B','C','D','E','F'], 8, rng(4)) },
+  A:{ niveles:4, filas:[
+      { id:'A', cols:5, profs:[1,2] },
+      { id:'B', cols:5, profs:[3,4] },
+      { id:'C', cols:5, profs:[1,2,3,4] },
+      { id:'D', cols:5, profs:[1,2,3,4] },
+      { id:'E', cols:5, profs:[1,2] },
+      { id:'F', cols:1, profs:[1,2,3,4] }
+  ]}
+};
+function filaDef(z,f){
+  const L = LAYOUT[z];
+  return L ? (L.filas.find(d => d.id === f) || null) : null;
+}
+
+function parseUbic(s){
+  if (!s) return null;
+  const p = String(s).toUpperCase().trim().replace(/\s+/g,'').split('-');
+  if (p.length < 5) return null;
+  if (!['F','C','A'].includes(p[0])) return null;
+  const col = parseInt(p[2],10), niv = parseInt(p[3],10), pr = parseInt(p[4],10);
+  if (!/^[A-Z]$/.test(p[1]) || isNaN(col) || isNaN(niv) || isNaN(pr)) return null;
+  return { zona:p[0], fila:p[1], col, nivel:niv, prof:pr };
+}
+// ¿la posición existe realmente en el rack?
+function ubicValida(s){
+  const p = parseUbic(s);
+  if (!p) return false;
+  const L = LAYOUT[p.zona]; if (!L) return false;
+  const d = filaDef(p.zona, p.fila); if (!d) return false;
+  if (p.col < 1 || p.col > d.cols) return false;
+  if (p.nivel < 1 || p.nivel > L.niveles) return false;
+  return d.profs.indexOf(p.prof) >= 0;
+}
+// Canónico: columna a 2 dígitos → A-B-04-3-4
+function normUbic(s){
+  if (!ubicValida(s)) return null;
+  const p = parseUbic(s);
+  return [p.zona, p.fila, String(p.col).padStart(2,'0'), p.nivel, p.prof].join('-');
+}
+// Texto de ayuda cuando el código no calza con la estructura
+function porQueInvalida(s){
+  const p = parseUbic(s);
+  if (!p) return 'no tiene el formato ZONA-FILA-COL-NIVEL-PROF';
+  const L = LAYOUT[p.zona]; if (!L) return 'la zona ' + p.zona + ' no existe';
+  const d = filaDef(p.zona, p.fila); if (!d) return 'la fila ' + p.fila + ' no existe en esa zona';
+  if (p.col < 1 || p.col > d.cols) return 'la fila ' + p.fila + ' solo tiene ' + d.cols + ' posición(es)';
+  if (p.nivel < 1 || p.nivel > L.niveles) return 'los niveles van de 1 a ' + L.niveles;
+  return 'la fila ' + p.fila + ' solo tiene ' + d.profs.map(x => 'P'+x).join(', ');
+}
+
+function docId(ubic, sku, lote){
+  return [ubic, String(sku).toUpperCase().trim(), String(lote||'SL').toUpperCase().trim()]
+    .join('__').replace(/[\/\.\#\$\[\]]/g,'_').slice(0,500);
+}
+
+function itemsEn(ubic){
+  return S.inventario.filter(i => i.ubicacion === ubic)
+                     .sort((a,b) => String(a.sku).localeCompare(String(b.sku)));
+}
+const upper = s => String(s ?? '').toUpperCase().trim();
+
+// ── Regla monoproducto: devuelve null si se puede guardar, o el motivo del bloqueo ──
+function validarPosicion(ubic, sku, lote){
+  if (REGLA_POSICION === 'LIBRE') return null;
+  const its = itemsEn(ubic);
+  if (!its.length) return null;
+  const otro = its.find(i => upper(i.sku) !== upper(sku));
+  if (otro) return { motivo:'sku', sku:otro.sku, desc:otro.descripcion, cant:its.reduce((s,i)=>s+(+i.cantidad||0),0) };
+  if (REGLA_POSICION === 'MONO_SKU_LOTE'){
+    const otroL = its.find(i => upper(i.lote || 'SL') !== upper(lote || 'SL'));
+    if (otroL) return { motivo:'lote', sku:otroL.sku, lote:otroL.lote, cant:+otroL.cantidad||0 };
+  }
+  return null;
+}
+// Dónde más está guardado este SKU (para consolidar en vez de dispersar)
+function posicionesDe(sku){
+  const s = upper(sku);
+  const m = {};
+  S.inventario.filter(i => upper(i.sku) === s).forEach(i => {
+    m[i.ubicacion] = (m[i.ubicacion] || 0) + (+i.cantidad || 0);
+  });
+  return Object.keys(m).sort().map(u => ({ ubic:u, cant:m[u] }));
+}
+
+function vencClass(iso){
+  if (!iso) return '';
+  const d = Math.ceil((new Date(iso) - new Date()) / 86400000);
+  if (isNaN(d)) return '';
+  return d < 0 ? 'venc-bad' : d <= 15 ? 'venc-warn' : 'venc-ok';
+}
+function vencTxt(iso){
+  if (!iso) return '—';
+  const d = Math.ceil((new Date(iso) - new Date()) / 86400000);
+  if (isNaN(d)) return esc(iso);
+  const f = new Date(iso).toLocaleDateString('es-CL');
+  return d < 0 ? `${f} · VENCIDO` : `${f} · ${d}d`;
+}
+const hoy = () => new Date().toISOString().slice(0,10);
+
+// ═══════════════════════════════════════════════════════════════════════
+//  UI: toast / tabs / conexión
+// ═══════════════════════════════════════════════════════════════════════
+let toastT;
+function toast(msg, kind='ok'){
+  const t = $('toast');
+  t.textContent = msg; t.className = 'show ' + kind;
+  clearTimeout(toastT);
+  toastT = setTimeout(() => t.className = kind, 2600);
+  if (navigator.vibrate) navigator.vibrate(kind === 'err' ? [90,60,90] : 45);
+}
+function setConn(state, txt){
+  $('conn-dot').className = 'dot ' + state;
+  $('conn-txt').textContent = txt;
+}
+document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  $('p-' + b.dataset.panel).classList.add('active');
+}));
+document.querySelectorAll('[data-qty]').forEach(b => b.addEventListener('click', () => {
+  const [id, d] = b.dataset.qty.split(':');
+  const el = $(id);
+  el.value = Math.max(0, (parseFloat(el.value) || 0) + parseFloat(d));
+}));
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ESCÁNER DE CÁMARA
+//  1) BarcodeDetector nativo (Chrome Android) — sin librerías
+//  2) ZXing como respaldo (iPhone / navegadores sin soporte)
+// ═══════════════════════════════════════════════════════════════════════
+const FORMATS = ['code_128','code_39','qr_code','ean_13','ean_8','itf','codabar'];
+let stream = null, rafId = null, detector = null, zxing = null, scanCb = null, lastCode = '', lastAt = 0;
+
+async function openScan(title, cb){
+  scanCb = cb;
+  $('scan-title').textContent = title;
+  $('scan-err').style.display = 'none';
+  $('scan-manual-in').value = '';
+  $('scanner').classList.add('open');
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode:{ ideal:'environment' }, width:{ ideal:1280 }, height:{ ideal:720 } }
+    });
+    const v = $('cam');
+    v.srcObject = stream;
+    await v.play();
+    if ('BarcodeDetector' in window){
+      const sup = await window.BarcodeDetector.getSupportedFormats();
+      detector = new window.BarcodeDetector({ formats: FORMATS.filter(f => sup.includes(f)) });
+      loopNative();
+    } else {
+      await loopZXing();
+    }
+  } catch(e){
+    $('scan-err').style.display = 'block';
+    $('scan-err').innerHTML = '<b>No se pudo abrir la cámara.</b><br><br>'
+      + esc(e.message) + '<br><br>Causas típicas: la página no está en <b>https://</b>, '
+      + 'o el permiso de cámara está bloqueado para este sitio.<br><br>'
+      + 'Puedes escribir el código a mano abajo mientras tanto.';
+  }
+}
+function loopNative(){
+  const v = $('cam');
+  const tick = async () => {
+    if (!stream) return;
+    try {
+      const codes = await detector.detect(v);
+      if (codes.length) hit(codes[0].rawValue);
+    } catch(_){}
+    rafId = requestAnimationFrame(tick);
+  };
+  rafId = requestAnimationFrame(tick);
+}
+async function loadZXing(){
+  if (window.ZXing) return;
+  await new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/@zxing/library@0.21.3/umd/index.min.js';
+    s.onload = res; s.onerror = () => rej(new Error('No se pudo cargar el lector (sin internet)'));
+    document.head.appendChild(s);
+  });
+}
+async function loopZXing(){
+  await loadZXing();
+  zxing = new window.ZXing.BrowserMultiFormatReader();
+  zxing.decodeFromVideoElement($('cam'), r => { if (r) hit(r.getText()); });
+}
+function hit(raw){
+  const code = String(raw).trim();
+  const now = Date.now();
+  if (code === lastCode && now - lastAt < 1600) return;   // anti rebote
+  lastCode = code; lastAt = now;
+  const cb = scanCb;
+  closeScan();
+  if (cb) cb(code);
+}
+function closeScan(){
+  if (rafId) cancelAnimationFrame(rafId), rafId = null;
+  if (zxing){ try { zxing.reset(); } catch(_){} zxing = null; }
+  if (stream){ stream.getTracks().forEach(t => t.stop()); stream = null; }
+  $('cam').srcObject = null;
+  $('scanner').classList.remove('open');
+  scanCb = null;
+}
+$('scan-close').addEventListener('click', closeScan);
+$('scan-manual-ok').addEventListener('click', () => {
+  const v = $('scan-manual-in').value.trim();
+  if (v) hit(v);
+});
+$('scan-manual-in').addEventListener('keydown', e => {
+  // También sirve para lectores Bluetooth: envían el código + Enter
+  if (e.key === 'Enter'){ e.preventDefault(); $('scan-manual-ok').click(); }
+});
+
+document.querySelectorAll('[data-scan]').forEach(b => b.addEventListener('click', () => {
+  const t = b.dataset.scan;
+  if (t === 'in-ubic-scan')  openScan('UBICACIÓN', c => setIngUbic(c));
+  if (t === 'in-sku-scan')   openScan('SKU',       c => setIngSku(c));
+  if (t === 'cs-scan')       openScan('CONSULTAR', c => { $('cs-q').value = c; runConsulta(c); });
+  if (t === 'ot-ubic-scan')  openScan('UBICACIÓN', c => setSalUbic(c));
+  if (t === 'ct-ubic-scan')  openScan('UBICACIÓN', c => setCntUbic(c));
+}));
+
+// ═══════════════════════════════════════════════════════════════════════
+//  INGRESO
+// ═══════════════════════════════════════════════════════════════════════
+function setIngUbic(code){
+  const u = normUbic(code);
+  if (!u){ toast('⛔ ' + code + ': ' + porQueInvalida(code), 'err'); return; }
+  S.ingreso.ubic = u;
+  const z = u[0];
+  $('in-ubic').className = 'captured';
+  $('in-ubic').innerHTML = esc(u) + ' <span class="zbadge z-' + z + '">' + (ZLABEL[z] || '?') + '</span>';
+  $('in-s1').classList.add('done');
+  $('in-s2').classList.remove('wait');
+
+  // Estado de ocupación: se ve ANTES de escanear el producto
+  const its = itemsEn(u);
+  const box = $('in-ocup');
+  if (!its.length){
+    box.innerHTML = '<div class="ocup libre">✓ Posición libre</div>';
+    toast('Ubicación ' + u + ' · libre');
+  } else {
+    const total = its.reduce((s,i) => s + (+i.cantidad || 0), 0);
+    const skus  = [...new Set(its.map(i => upper(i.sku)))];
+    const det = skus.map(k => {
+      const q = its.filter(i => upper(i.sku) === k).reduce((s,i) => s + (+i.cantidad || 0), 0);
+      return '<b>' + esc(k) + '</b> (' + q + ')';
+    }).join(' · ');
+    box.innerHTML = '<div class="ocup usada">'
+      + (skus.length > 1 ? 'Comparten esta posición: ' : 'Ocupada por ') + det
+      + (skus.length === 1 ? ' — ' + esc(its[0].descripcion || 'sin descripción') : '')
+      + '<br>' + total + ' u. en ' + its.length + ' registro(s)'
+      + (reglaEstricta() ? '<br>Solo se admite más de ese mismo producto.'
+                         : '<br>Puedes agregar otro producto aquí.') + '</div>';
+    toast(skus.length > 1 ? skus.length + ' productos en ' + u : 'Ocupada por ' + its[0].sku, 'info');
+  }
+  revisarRegla();
+}
+
+// ── Muestra u oculta el bloqueo monoproducto y habilita/deshabilita Guardar ──
+function revisarRegla(){
+  const g = S.ingreso, box = $('in-alert'), btn = $('in-save');
+  if (!g.ubic || !g.sku){ box.innerHTML = ''; btn.disabled = false; return; }
+  const c = validarPosicion(g.ubic, g.sku, $('in-lote').value);
+  if (!c){ box.innerHTML = ''; btn.disabled = false; return; }
+
+  btn.disabled = true;
+  const otras = posicionesDe(g.sku);
+  const sug = otras.length
+    ? '<div class="sug">' + esc(g.sku) + ' ya está en: '
+      + otras.slice(0,6).map(o => '<b>' + esc(o.ubic) + '</b> (' + o.cant + ')').join(' · ')
+      + (otras.length > 6 ? ' …' : '') + '</div>'
+    : '<div class="sug">Este SKU todavía no está en ninguna posición.</div>';
+
+  box.innerHTML = '<div class="bloqueo"><h5>⛔ Posición ocupada</h5>'
+    + (c.motivo === 'sku'
+        ? esc(g.ubic) + ' ya tiene <b>' + esc(c.sku) + '</b> (' + esc(c.desc || 'sin descripción')
+          + ', ' + c.cant + ' u.).<br>Las posiciones son monoproducto: retira ese producto primero o usa otra posición.'
+        : esc(g.ubic) + ' ya tiene el lote <b>' + esc(c.lote || 'sin lote') + '</b> de ' + esc(c.sku)
+          + '.<br>Cada posición admite un solo lote.')
+    + sug + '</div>';
+}
+function setIngSku(code){
+  const sku = String(code).toUpperCase().trim();
+  S.ingreso.sku = sku;
+  $('in-sku').className = 'captured';
+  $('in-sku').textContent = sku;
+  $('in-s2').classList.add('done');
+  $('in-s3').classList.remove('wait');
+  // autocompletar con el último registro conocido de ese SKU
+  const prev = S.inventario.filter(i => upper(i.sku) === sku).pop();
+  if (prev && !$('in-desc').value) $('in-desc').value = prev.descripcion || '';
+
+  revisarRegla();
+  const c = validarPosicion(S.ingreso.ubic, sku, $('in-lote').value);
+  if (c) toast('⛔ ' + S.ingreso.ubic + ' está ocupada por ' + c.sku, 'err');
+  else if (prev) toast(prev.descripcion ? prev.descripcion.slice(0,34) : 'SKU ' + sku);
+  else toast('SKU nuevo: ' + sku, 'info');
+  // en modo multiproducto validarPosicion siempre devuelve null: nada bloquea
+}
+$('in-save').addEventListener('click', async () => {
+  const g = S.ingreso;
+  if (!g.ubic) return toast('Falta escanear la ubicación', 'err');
+  if (!g.sku)  return toast('Falta escanear el SKU', 'err');
+  const cant = parseFloat($('in-cant').value) || 0;
+  if (cant <= 0) return toast('La cantidad debe ser mayor que 0', 'err');
+
+  const lote = $('in-lote').value.trim().toUpperCase();
+
+  // Regla monoproducto — bloqueo duro antes de tocar la base
+  const c = validarPosicion(g.ubic, g.sku, lote);
+  if (c){
+    revisarRegla();
+    return toast(c.motivo === 'sku'
+      ? '⛔ ' + g.ubic + ' ya tiene ' + c.sku
+      : '⛔ ' + g.ubic + ' ya tiene el lote ' + (c.lote || 'sin lote'), 'err');
+  }
+
+  const rec = {
+    ubicacion: g.ubic,
+    sku: g.sku,
+    descripcion: $('in-desc').value.trim(),
+    cantidad: cant,
+    lote,
+    fecha_elab: $('in-elab').value || '',
+    fecha_venc: $('in-venc').value || '',
+    fecha_ingreso: hoy(),
+    comentario: $('in-comt').value.trim(),
+    nivel: parseUbic(g.ubic).nivel,
+    prof:  parseUbic(g.ubic).prof
+  };
+  const ok = await guardarIngreso(rec);
+  if (!ok) return;
+  pushLog('IN', g.ubic, g.sku, '+' + cant);
+  toast('✓ ' + cant + ' u. en ' + g.ubic);
+  // Reset parcial: mantiene la ubicación para cargar varios SKU seguidos
+  S.ingreso.sku = '';
+  $('in-sku').className = 'captured empty'; $('in-sku').textContent = 'sin SKU';
+  $('in-s2').classList.remove('done');
+  $('in-s3').classList.add('wait');
+  ['in-desc','in-lote','in-comt'].forEach(id => $(id).value = '');
+  $('in-cant').value = 1;
+  $('in-alert').innerHTML = '';
+  $('in-save').disabled = false;
+  setIngUbic(g.ubic);   // refresca el estado de ocupación de la posición
+});
+$('in-lote').addEventListener('input', revisarRegla);
+
+function pushLog(tipo, ubic, sku, qty){
+  S.log.unshift({ tipo, ubic, sku, qty, t:new Date() });
+  S.log = S.log.slice(0, 12);
+  const map = { IN:'tag-IN', OUT:'tag-OUT', CNT:'tag-CNT' };
+  $('in-log').innerHTML = '<label class="fl">Últimos movimientos de este turno</label>'
+    + S.log.map(l =>
+        '<div class="log-item"><span class="log-tag ' + map[l.tipo] + '">' + l.tipo + '</span>'
+        + '<div class="log-body"><b>' + esc(l.ubic) + '</b><span>' + esc(l.sku) + ' · '
+        + l.t.toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'}) + '</span></div>'
+        + '<span class="log-qty">' + esc(l.qty) + '</span></div>').join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CONSULTA
+// ═══════════════════════════════════════════════════════════════════════
+$('cs-q').addEventListener('input', e => runConsulta(e.target.value));
+
+function runConsulta(q){
+  q = String(q || '').trim().toUpperCase();
+  const out = $('cs-out');
+  if (!q){ out.innerHTML = '<div class="empty">Escanea una etiqueta de ubicación o de producto.</div>'; return; }
+
+  const u = normUbic(q);
+  let items, titulo;
+  if (u){
+    items = itemsEn(u);
+    titulo = 'Posición ' + u;
+    if (!items.length){
+      out.innerHTML = '<div class="rcard" style="border-left-color:var(--muted)"><h4>' + esc(u)
+        + '</h4><p class="hint">Posición vacía — no hay nada registrado aquí.</p></div>';
+      return;
+    }
+  } else {
+    items = S.inventario.filter(i =>
+      String(i.sku).toUpperCase().includes(q) ||
+      String(i.descripcion).toUpperCase().includes(q) ||
+      String(i.lote).toUpperCase().includes(q) ||
+      String(i.ubicacion).includes(q));
+    titulo = items.length + ' resultado(s) para «' + q + '»';
+    if (!items.length){
+      out.innerHTML = '<div class="empty">⚠ Sin resultados para «' + esc(q) + '»</div>';
+      return;
+    }
+  }
+  const total = items.reduce((s,i) => s + (+i.cantidad || 0), 0);
+  out.innerHTML = '<label class="fl">' + esc(titulo) + ' · ' + total + ' unidades</label>'
+    + items.map(i => cardHTML(i)).join('');
+}
+function cardHTML(i){
+  const z = String(i.ubicacion)[0];
+  return '<div class="rcard" style="margin-bottom:9px">'
+    + '<h4>' + esc(i.ubicacion) + ' <span class="zbadge z-' + z + '">' + (ZLABEL[z] || '?') + '</span></h4>'
+    + row('SKU', esc(i.sku))
+    + row('Descripción', esc(i.descripcion || '—'))
+    + row('Cantidad', '<b style="color:var(--green);font-size:15px">' + (+i.cantidad || 0) + '</b>')
+    + row('Lote', esc(i.lote || '—'))
+    + row('Elaboración', i.fecha_elab ? new Date(i.fecha_elab).toLocaleDateString('es-CL') : '—')
+    + '<div class="rrow"><span class="lbl">Vencimiento</span><span class="val ' + vencClass(i.fecha_venc) + '">' + vencTxt(i.fecha_venc) + '</span></div>'
+    + (i.comentario ? row('Comentario', esc(i.comentario)) : '')
+    + (i.usuario ? row('Últ. mov.', esc(i.usuario)) : '')
+    + '</div>';
+}
+const row = (l,v) => '<div class="rrow"><span class="lbl">' + l + '</span><span class="val">' + v + '</span></div>';
+
+// ═══════════════════════════════════════════════════════════════════════
+//  TECLADO NUMÉRICO — pide la cantidad de forma explícita
+//  Se abre vacío: sin escribir un número no se puede confirmar.
+// ═══════════════════════════════════════════════════════════════════════
+let KP = null;   // { buf, max, onOk }
+
+function pedirCantidad(cfg){
+  // cfg: {titulo, sku, sub, refLabel, refValor, max, quick, rojo, onOk}
+  KP = { buf:'', max: (cfg.max == null ? Infinity : cfg.max), onOk: cfg.onOk };
+  $('kp-tit').textContent = cfg.titulo;
+  $('kp-sku').textContent = cfg.sku;
+  $('kp-sub').textContent = cfg.sub || '';
+  $('kp-ref-l').textContent = cfg.refLabel;
+  $('kp-ref-v').textContent = cfg.refValor;
+  $('kp-ref-v').style.color = cfg.rojo ? 'var(--green)' : 'var(--gold)';
+  $('kp-ok').textContent = cfg.rojo ? 'RETIRAR' : 'CONFIRMAR';
+  $('kp-ok').className = 'kp-ok' + (cfg.rojo ? ' red' : '');
+  const q = $('kp-quick');
+  if (cfg.quick){ q.style.display = 'block'; q.textContent = cfg.quick.txt; q.dataset.v = cfg.quick.val; }
+  else q.style.display = 'none';
+  kpPinta();
+  $('kp').classList.add('open');
+}
+function kpPinta(){
+  const d = $('kp-disp'), m = $('kp-msg'), ok = $('kp-ok');
+  const vacio = KP.buf === '';
+  const n = vacio ? null : parseInt(KP.buf, 10);
+  d.textContent = vacio ? '—' : String(n);
+  d.className = 'kp-disp' + (vacio ? ' empty' : '');
+  m.className = 'kp-msg'; m.textContent = vacio ? 'Escribe la cantidad' : '';
+  if (n !== null && n > KP.max){
+    d.className = 'kp-disp bad'; m.className = 'kp-msg bad';
+    m.textContent = 'Solo hay ' + KP.max + ' disponibles';
+  }
+  ok.disabled = vacio || n > KP.max;
+}
+function kpDigito(d){
+  if (KP.buf.length >= 6) return;
+  if (KP.buf === '' && d === '0'){ KP.buf = '0'; kpPinta(); return; }
+  KP.buf = (KP.buf === '0' ? '' : KP.buf) + d;
+  kpPinta();
+}
+function kpCerrar(){ $('kp').classList.remove('open'); KP = null; }
+
+document.querySelectorAll('#kp .kp-k[data-d]').forEach(b =>
+  b.addEventListener('click', () => KP && kpDigito(b.dataset.d)));
+$('kp-del').addEventListener('click', () => { if(KP){ KP.buf = KP.buf.slice(0,-1); kpPinta(); } });
+$('kp-clr').addEventListener('click', () => { if(KP){ KP.buf = ''; kpPinta(); } });
+$('kp-quick').addEventListener('click', e => { if(KP){ KP.buf = String(e.currentTarget.dataset.v); kpPinta(); } });
+$('kp-cancel').addEventListener('click', kpCerrar);
+$('kp-ok').addEventListener('click', () => {
+  if (!KP || KP.buf === '') return;
+  const n = parseInt(KP.buf, 10);
+  if (n > KP.max) return;
+  const fn = KP.onOk;
+  kpCerrar();
+  fn(n);
+});
+$('kp').addEventListener('click', e => { if (e.target.id === 'kp') kpCerrar(); });
+// teclado físico, útil si algún día se usa con lector de mano
+document.addEventListener('keydown', e => {
+  if (!KP) return;
+  if (/^[0-9]$/.test(e.key)){ e.preventDefault(); kpDigito(e.key); }
+  else if (e.key === 'Backspace'){ e.preventDefault(); KP.buf = KP.buf.slice(0,-1); kpPinta(); }
+  else if (e.key === 'Enter'){ e.preventDefault(); $('kp-ok').click(); }
+  else if (e.key === 'Escape'){ e.preventDefault(); kpCerrar(); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  SALIDA
+// ═══════════════════════════════════════════════════════════════════════
+function setSalUbic(code){
+  const u = normUbic(code);
+  if (!u){ toast('⛔ ' + code + ': ' + porQueInvalida(code), 'err'); return; }
+  S.salida.ubic = u;
+  $('ot-ubic').className = 'captured';
+  $('ot-ubic').innerHTML = esc(u) + ' <span class="zbadge z-' + u[0] + '">' + (ZLABEL[u[0]] || '?') + '</span>';
+  renderSalida();
+}
+function renderSalida(){
+  const u = S.salida.ubic;
+  const box = $('ot-list');
+  if (!u) return;
+  const items = itemsEn(u);
+  if (!items.length){
+    box.innerHTML = '<div class="empty">La posición ' + esc(u) + ' está vacía.</div>';
+    return;
+  }
+  box.innerHTML = items.map(i =>
+    '<div class="step" style="border-left:3px solid var(--red)">'
+    + '<div class="step-hdr"><h3>' + esc(i.sku) + '</h3></div>'
+    + '<p class="hint" style="margin-bottom:8px">' + esc(i.descripcion || '—')
+    + ' · Lote ' + esc(i.lote || '—') + '<br>Disponible: <b style="color:var(--green)">' + (+i.cantidad || 0) + '</b>'
+    + ' · Vence <span class="' + vencClass(i.fecha_venc) + '">' + vencTxt(i.fecha_venc) + '</span></p>'
+    + '<button class="scanbtn red" data-sal="' + esc(i.id) + '">📤 RETIRAR…</button>'
+    + '</div>').join('');
+
+  box.querySelectorAll('[data-sal]').forEach(b => b.addEventListener('click', () => {
+    const it = S.inventario.find(x => x.id === b.dataset.sal);
+    if (!it) return;
+    const disp = +it.cantidad || 0;
+    pedirCantidad({
+      titulo: 'RETIRAR DE ' + it.ubicacion,
+      sku: it.sku,
+      sub: (it.descripcion || 'sin descripción') + ' · Lote ' + (it.lote || '—'),
+      refLabel: 'Disponible en la posición', refValor: disp,
+      max: disp, rojo: true,
+      quick: { txt: 'Vaciar la posición — retirar los ' + disp, val: disp },
+      onOk: n => doSalida(it.id, n)
+    });
+  }));
+}
+async function doSalida(id, cant){
+  const it = S.inventario.find(x => x.id === id);
+  if (!it) return toast('Registro no encontrado', 'err');
+  if (cant <= 0) return toast('Indica cuánto retiras', 'err');
+  if (cant > (+it.cantidad || 0)) return toast('No hay tanto stock (' + it.cantidad + ')', 'err');
+  const ubic = it.ubicacion, sku = it.sku;
+  const ok = await guardarSalida(it, cant);
+  if (!ok) return;
+  pushLog('OUT', ubic, sku, '−' + cant);
+  toast('✓ Retirado ' + cant + ' de ' + ubic);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CONTEO CÍCLICO
+// ═══════════════════════════════════════════════════════════════════════
+function setCntUbic(code){
+  const u = normUbic(code);
+  if (!u){ toast('⛔ ' + code + ': ' + porQueInvalida(code), 'err'); return; }
+  S.conteo.ubic = u;
+  $('ct-ubic').className = 'captured';
+  $('ct-ubic').innerHTML = esc(u) + ' <span class="zbadge z-' + u[0] + '">' + (ZLABEL[u[0]] || '?') + '</span>';
+  renderConteo();
+}
+function renderConteo(){
+  const u = S.conteo.ubic, box = $('ct-list');
+  if (!u) return;
+  const items = itemsEn(u);
+  if (!items.length){
+    box.innerHTML = '<div class="rcard" style="border-left-color:var(--muted)"><h4>' + esc(u) + '</h4>'
+      + '<p class="hint">El sistema dice que está <b>vacía</b>. Si encuentras producto aquí, regístralo desde la pestaña Ingreso.</p></div>';
+    return;
+  }
+  box.innerHTML = items.map(i =>
+    '<div class="step">'
+    + '<div class="step-hdr"><h3>' + esc(i.sku) + '</h3></div>'
+    + '<p class="hint" style="margin-bottom:8px">' + esc(i.descripcion || '—') + ' · Lote ' + esc(i.lote || '—') + '</p>'
+    + '<div class="rrow"><span class="lbl">Sistema dice</span><span class="val" style="font-size:16px;color:var(--gold)">' + (+i.cantidad || 0) + '</span></div>'
+    + '<div style="height:10px"></div>'
+    + '<button class="scanbtn" data-conf="' + esc(i.id) + '">🧮 CONTAR…</button>'
+    + '</div>').join('');
+
+  box.querySelectorAll('[data-conf]').forEach(b => b.addEventListener('click', () => {
+    const it = S.inventario.find(x => x.id === b.dataset.conf);
+    if (!it) return;
+    pedirCantidad({
+      titulo: 'CONTEO EN ' + it.ubicacion,
+      sku: it.sku,
+      sub: (it.descripcion || 'sin descripción') + ' · Lote ' + (it.lote || '—'),
+      refLabel: 'El sistema dice', refValor: (+it.cantidad || 0),
+      max: null,                       // contar de más es válido: es justamente la diferencia
+      onOk: n => doConteo(it.id, n)
+    });
+  }));
+}
+async function doConteo(id, contado){
+  const it = S.inventario.find(x => x.id === id);
+  if (!it) return toast('Registro no encontrado', 'err');
+  // se captura ANTES de guardar: al escribir, el listener de Firestore ya trae la cifra nueva
+  const sis = +it.cantidad || 0;
+  const ubic = it.ubicacion, sku = it.sku;
+  const dif = contado - sis;
+  const ok = await guardarConteo(it, contado, dif);
+  if (!ok) return;
+  if (dif !== 0){
+    S.conteo.diffs.unshift({ ubic:ubic, sku:sku, sis:sis, real:contado, dif });
+    renderDiffs();
+  }
+  pushLog('CNT', ubic, sku, (dif > 0 ? '+' : '') + dif);
+  toast(dif === 0 ? '✓ Cuadra en ' + ubic : '⚠ Diferencia ' + (dif > 0 ? '+' : '') + dif, dif === 0 ? 'ok' : 'info');
+}
+function renderDiffs(){
+  $('ct-sum').style.display = S.conteo.diffs.length ? 'block' : 'none';
+  $('ct-diffs').innerHTML = S.conteo.diffs.map(d =>
+    '<div class="log-item"><span class="log-tag tag-CNT">' + (d.dif > 0 ? '+' : '') + d.dif + '</span>'
+    + '<div class="log-body"><b>' + esc(d.ubic) + '</b><span>' + esc(d.sku) + ' · sistema ' + d.sis + ' → real ' + d.real + '</span></div></div>').join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  MODO LOCAL — el teléfono trabaja solo, sin cuentas ni internet
+//
+//  El inventario vive en este teléfono. Cada ingreso, salida y conteo se
+//  aplica de inmediato y además se anota en una lista de movimientos que
+//  el operario descarga al final del turno y manda a la oficina.
+//  El dashboard aplica esos movimientos sobre el Excel maestro.
+// ═══════════════════════════════════════════════════════════════════════
+const esLocal = () => S.modo === 'local';
+
+function localCargar(){
+  try { S.inventario = JSON.parse(localStorage.getItem('bq_inv') || '[]'); } catch(_){ S.inventario = []; }
+  try { S.movs      = JSON.parse(localStorage.getItem('bq_movs') || '[]'); } catch(_){ S.movs = []; }
+}
+function localGuardar(){
+  try {
+    localStorage.setItem('bq_inv',  JSON.stringify(S.inventario));
+    localStorage.setItem('bq_movs', JSON.stringify(S.movs));
+  } catch(e){
+    // Si el teléfono se queda sin espacio hay que decirlo fuerte: si no,
+    // el operario sigue capturando sobre algo que ya no se está guardando.
+    toast('⛔ SIN ESPACIO EN EL TELÉFONO — envía los movimientos ya', 'err');
+    return false;
+  }
+  return true;
+}
+function localEstado(){
+  const n = S.movs.length;
+  setConn(n ? 'pend' : 'off',
+    'sin internet · ' + S.inventario.length + ' reg.' + (n ? ' · ' + n + ' por enviar' : ''));
+  if ($('lc-inv')){
+    $('lc-inv').textContent  = S.inventario.length;
+    $('lc-movs').textContent = n;
+    $('lc-movs').style.color = n ? 'var(--gold)' : 'var(--muted)';
+  }
+}
+// Cada movimiento guarda el saldo que quedó, para poder revisar después
+function localMov(tipo, ubicacion, sku, lote, delta, saldo, extra){
+  S.movs.push(Object.assign({
+    tipo, ubicacion, sku, lote: lote || '', delta, saldo,
+    usuario: S.user, ts: new Date().toISOString()
+  }, extra || {}));
+}
+
+async function localIngreso(rec){
+  const id = docId(rec.ubicacion, rec.sku, rec.lote);
+  const prev = S.inventario.find(x => x.id === id);
+  if (prev) prev.cantidad = (+prev.cantidad || 0) + rec.cantidad;
+  else S.inventario.push(Object.assign({ id }, rec, { usuario: S.user }));
+  const saldo = (S.inventario.find(x => x.id === id) || {}).cantidad;
+  localMov('INGRESO', rec.ubicacion, rec.sku, rec.lote, rec.cantidad, saldo, {
+    descripcion: rec.descripcion || '', fecha_elab: rec.fecha_elab || '', fecha_venc: rec.fecha_venc || ''
+  });
+  if (!localGuardar()) return false;
+  localEstado(); refreshViews();
+  return true;
+}
+async function localSalida(it, cant){
+  const resto = (+it.cantidad || 0) - cant;
+  if (resto <= 0) S.inventario = S.inventario.filter(x => x.id !== it.id);
+  else it.cantidad = resto;
+  localMov('SALIDA', it.ubicacion, it.sku, it.lote, -cant, Math.max(0, resto));
+  if (!localGuardar()) return false;
+  localEstado(); refreshViews();
+  return true;
+}
+async function localConteo(it, contado, dif){
+  if (contado <= 0) S.inventario = S.inventario.filter(x => x.id !== it.id);
+  else it.cantidad = contado;
+  localMov('CONTEO', it.ubicacion, it.sku, it.lote, dif, contado);
+  if (!localGuardar()) return false;
+  localEstado(); refreshViews();
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CAPA DE DATOS — Firestore (tiempo real + cola offline automática)
+// ═══════════════════════════════════════════════════════════════════════
+let FS = null;   // { doc, setDoc, updateDoc, deleteDoc, getDoc, addDoc, collection, onSnapshot, serverTimestamp, increment }
+
+function getConfig(){
+  if (FB_HARDCODED.apiKey && FB_HARDCODED.projectId) return FB_HARDCODED;
+  try { return JSON.parse(localStorage.getItem('bq_fb') || 'null'); } catch(_){ return null; }
+}
+
+async function initFirebase(){
+  const cfg = getConfig();
+  if (!cfg || !cfg.apiKey || !cfg.projectId){
+    setConn('off', 'sin configurar');
+    $('cfg').classList.add('open');
+    return;
+  }
+  try {
+    setConn('pend', 'conectando…');
+    const [{ initializeApp }, fs, { getAuth, signInAnonymously, onAuthStateChanged }] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js')
+    ]);
+    FS = fs;
+    const app = initializeApp({
+      apiKey: cfg.apiKey,
+      authDomain: cfg.projectId + '.firebaseapp.com',
+      projectId: cfg.projectId,
+      storageBucket: cfg.projectId + '.appspot.com',
+      appId: cfg.appId || ''
+    });
+    // Caché persistente → la app sigue operando dentro de la cámara de frío sin señal
+    let db;
+    try {
+      db = fs.initializeFirestore(app, {
+        localCache: fs.persistentLocalCache({ tabManager: fs.persistentMultipleTabManager() })
+      });
+    } catch(_){
+      db = fs.getFirestore(app);
+    }
+    S.db = db;
+
+    const auth = getAuth(app);
+    await signInAnonymously(auth);
+
+    fs.onSnapshot(fs.collection(db, 'inventario'), snap => {
+      S.inventario = snap.docs.map(d => ({ id:d.id, ...d.data() }));
+      const pend = snap.metadata.hasPendingWrites;
+      const cache = snap.metadata.fromCache;
+      setConn(cache ? 'off' : (pend ? 'pend' : 'on'),
+              (cache ? 'offline · ' : (pend ? 'guardando · ' : 'en línea · ')) + S.inventario.length + ' reg.');
+      refreshViews();
+    }, err => {
+      setConn('off', 'error');
+      toast('Error de conexión: ' + err.code, 'err');
+    });
+
+    window.addEventListener('offline', () => setConn('off', 'offline · en cola'));
+  } catch(e){
+    setConn('off', 'error');
+    toast('No se pudo iniciar Firebase: ' + e.message, 'err');
+  }
+}
+
+function refreshViews(){
+  if (S.salida.ubic) renderSalida();
+  if (S.conteo.ubic) renderConteo();
+  if ($('cs-q').value) runConsulta($('cs-q').value);
+  // si otro operario ocupó la posición mientras se llenaba el formulario, aparece el bloqueo
+  revisarRegla();
+}
+
+function requireDB(){
+  if (!S.user){ toast('Pon tu nombre en configuración (botón 👤)', 'err'); $('cfg').classList.add('open'); return false; }
+  if (esLocal()){
+    if (!S.inventario.length && !S.movs.length)
+      toast('Ojo: este teléfono no tiene la base cargada todavía', 'info');
+    return true;
+  }
+  if (!S.db){ toast('Falta configurar la conexión (botón 👤)', 'err'); $('cfg').classList.add('open'); return false; }
+  return true;
+}
+
+// ── Candado de posición ──────────────────────────────────────────────
+//  posiciones/{UBICACION} = { sku, registros, ubicacion }
+//  Es lo que hace cumplir «monoproducto» aunque dos operarios escaneen
+//  la misma posición al mismo tiempo desde teléfonos distintos.
+// ─────────────────────────────────────────────────────────────────────
+class PosicionOcupada extends Error {
+  constructor(sku){ super('ocupada'); this.sku = sku; }
+}
+
+const hayRed = () => navigator.onLine;
+
+// Sin señal, una escritura de Firestore NO resuelve hasta reconectar: se deja
+// encolada sin esperarla. El cambio ya está en la caché local, así que la
+// pantalla se actualiza igual. Si al sincronizar las reglas la rechazan, avisa.
+function encolar(p, etiqueta){
+  if (p && typeof p.catch === 'function'){
+    p.catch(e => {
+      if (e && (e.code === 'permission-denied' || e.code === 'failed-precondition'))
+        toast('⚠ Rechazado al sincronizar (' + etiqueta + '): la posición ya estaba ocupada', 'err');
+    });
+  }
+  return true;
+}
+// Evita que un WiFi que responde pero no conecta deje al operario esperando
+function conLimite(p, ms = 8000){
+  return Promise.race([
+    p,
+    new Promise((_, rej) => setTimeout(() => rej(Object.assign(new Error('sin respuesta'), { code:'deadline' })), ms))
+  ]);
+}
+
+async function guardarIngreso(rec){
+  if (!requireDB()) return false;
+  if (esLocal()) return localIngreso(rec);
+  const id = docId(rec.ubicacion, rec.sku, rec.lote);
+  try {
+    const iRef = FS.doc(S.db, 'inventario', id);
+    const pRef = FS.doc(S.db, 'posiciones', rec.ubicacion);
+
+    if (!hayRed()){
+      // Sin señal no hay transacción posible. Vale la validación local (ya corrió)
+      // y la escritura queda encolada; las reglas de Firestore rechazan el choque
+      // cuando el teléfono recupera conexión.
+      const prev = S.inventario.find(x => x.id === id);
+      if (prev){
+        encolar(FS.updateDoc(iRef, { cantidad: FS.increment(rec.cantidad), usuario:S.user, updatedAt: FS.serverTimestamp() }), 'ingreso');
+      } else {
+        encolar(FS.setDoc(iRef, { ...rec, usuario:S.user, updatedAt: FS.serverTimestamp() }), 'ingreso');
+        encolar(FS.setDoc(pRef, { sku: rec.sku, ubicacion: rec.ubicacion, registros: FS.increment(1) }, { merge:true }), 'posición');
+      }
+      encolar(FS.addDoc(FS.collection(S.db,'movimientos'),
+        { tipo:'INGRESO', ubicacion:rec.ubicacion, sku:rec.sku, lote:rec.lote||'',
+          delta:rec.cantidad, saldo:rec.cantidad, usuario:S.user, offline:true, ts:FS.serverTimestamp() }), 'bitácora');
+      return true;
+    }
+
+    await conLimite(FS.runTransaction(S.db, async tx => {
+        const pSnap = await tx.get(pRef);
+        const iSnap = await tx.get(iRef);
+        const lock  = pSnap.exists() ? pSnap.data() : null;
+
+        if (REGLA_POSICION !== 'LIBRE' && lock && (lock.registros || 0) > 0
+            && upper(lock.sku) !== upper(rec.sku)){
+          throw new PosicionOcupada(lock.sku);
+        }
+        if (iSnap.exists()){
+          const d = iSnap.data();
+          tx.update(iRef, {
+            cantidad: (+d.cantidad || 0) + rec.cantidad,
+            descripcion: rec.descripcion || d.descripcion || '',
+            fecha_venc: rec.fecha_venc || d.fecha_venc || '',
+            fecha_elab: rec.fecha_elab || d.fecha_elab || '',
+            comentario: rec.comentario || d.comentario || '',
+            usuario: S.user, updatedAt: FS.serverTimestamp()
+          });
+          // autorreparación: registro sin candado (p. ej. carga antigua)
+          if (!lock) tx.set(pRef, { sku: rec.sku, ubicacion: rec.ubicacion, registros: 1 });
+        } else {
+          tx.set(iRef, { ...rec, usuario:S.user, updatedAt: FS.serverTimestamp() });
+          tx.set(pRef, { sku: rec.sku, ubicacion: rec.ubicacion,
+                       registros: (lock ? (lock.registros || 0) : 0) + 1 });
+      }
+    }));
+    mov('INGRESO', rec.ubicacion, rec.sku, rec.lote, rec.cantidad, rec.cantidad);
+    return true;
+  } catch(e){
+    if (e instanceof PosicionOcupada){
+      toast('⛔ ' + rec.ubicacion + ' fue ocupada con ' + e.sku, 'err');
+      revisarRegla();
+    } else if (e && e.code === 'deadline'){
+      toast('Sin respuesta del servidor — no se guardó. Reintenta.', 'err');
+    } else {
+      toast('No se pudo guardar: ' + e.message, 'err');
+    }
+    return false;
+  }
+}
+
+// Con señal se espera la confirmación; sin señal se encola y se sigue trabajando
+function escribir(p, etiqueta){
+  return hayRed() ? conLimite(p) : Promise.resolve(encolar(p, etiqueta));
+}
+
+// Al eliminar el último registro de una posición, se suelta el candado
+function soltarSiVacia(ubicacion, quitandoId){
+  const quedan = S.inventario.filter(i => i.ubicacion === ubicacion && i.id !== quitandoId).length;
+  const pRef = FS.doc(S.db, 'posiciones', ubicacion);
+  const p = quedan <= 0 ? FS.deleteDoc(pRef) : FS.updateDoc(pRef, { registros: quedan });
+  // el candado nunca debe bloquear la operación: se autorrepara en el próximo ingreso
+  encolar(p, 'posición');
+}
+
+async function guardarSalida(it, cant){
+  if (!requireDB()) return false;
+  if (esLocal()) return localSalida(it, cant);
+  try {
+    const ref = FS.doc(S.db, 'inventario', it.id);
+    const resto = (+it.cantidad || 0) - cant;
+    if (resto <= 0){
+      await escribir(FS.deleteDoc(ref), 'salida');
+      soltarSiVacia(it.ubicacion, it.id);
+    } else {
+      await escribir(FS.updateDoc(ref, { cantidad: FS.increment(-cant), usuario:S.user, updatedAt: FS.serverTimestamp() }), 'salida');
+    }
+    mov('SALIDA', it.ubicacion, it.sku, it.lote, -cant, resto);
+    return true;
+  } catch(e){ toast('No se pudo guardar: ' + e.message, 'err'); return false; }
+}
+async function guardarConteo(it, contado, dif){
+  if (!requireDB()) return false;
+  if (esLocal()) return localConteo(it, contado, dif);
+  try {
+    const ref = FS.doc(S.db, 'inventario', it.id);
+    if (contado <= 0){
+      await escribir(FS.deleteDoc(ref), 'conteo');
+      soltarSiVacia(it.ubicacion, it.id);
+    } else {
+      await escribir(FS.updateDoc(ref, { cantidad: contado, usuario:S.user, updatedAt: FS.serverTimestamp() }), 'conteo');
+    }
+    mov('CONTEO', it.ubicacion, it.sku, it.lote, dif, contado);
+    return true;
+  } catch(e){ toast('No se pudo guardar: ' + e.message, 'err'); return false; }
+}
+// La bitácora nunca bloquea: se dispara y se olvida
+function mov(tipo, ubicacion, sku, lote, delta, saldo){
+  encolar(FS.addDoc(FS.collection(S.db, 'movimientos'),
+    { tipo, ubicacion, sku, lote: lote || '', delta, saldo, usuario:S.user, ts: FS.serverTimestamp() }), 'bitácora');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CONFIG UI
+// ═══════════════════════════════════════════════════════════════════════
+$('btn-cfg').addEventListener('click', () => {
+  const c = getConfig() || {};
+  $('cfg-user').value = S.user;
+  $('cfg-pid').value = c.projectId || '';
+  $('cfg-key').value = c.apiKey || '';
+  $('cfg-app').value = c.appId || '';
+  pintarModo();
+  localEstado();
+  $('cfg').classList.add('open');
+});
+
+// ── Selector de modo ──────────────────────────────────────────────────
+let modoElegido = S.modo;
+function pintarModo(){
+  document.querySelectorAll('.modo-op').forEach(b =>
+    b.classList.toggle('on', b.dataset.modo === modoElegido));
+  $('bloque-local').style.display = modoElegido === 'local' ? 'block' : 'none';
+  $('bloque-nube').style.display  = modoElegido === 'local' ? 'none'  : 'block';
+  const f = localStorage.getItem('bq_base_fecha');
+  if ($('lc-fecha')) $('lc-fecha').textContent = f || '—';
+}
+document.querySelectorAll('.modo-op').forEach(b => b.addEventListener('click', () => {
+  modoElegido = b.dataset.modo; pintarModo();
+}));
+
+// ── Cargar la base que exportó el dashboard ───────────────────────────
+$('lc-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    let d;
+    try { d = JSON.parse(r.result); }
+    catch(_){ return toast('⛔ Ese archivo no se entiende', 'err'); }
+    const inv = Array.isArray(d) ? d : d.inventario;
+    if (!Array.isArray(inv)) return toast('⛔ El archivo no trae inventario', 'err');
+
+    if (S.movs.length && !confirm(
+        'Tienes ' + S.movs.length + ' movimientos sin enviar.\n\n' +
+        'Si cargas una base nueva se pierden. ¿Descargarlos primero?\n\n' +
+        'Aceptar = cargar igual (se pierden)   ·   Cancelar = salir y descargarlos'))
+      { e.target.value = ''; return; }
+
+    S.inventario = inv.map(x => Object.assign({}, x, {
+      id: x.id || docId(x.ubicacion, x.sku, x.lote),
+      cantidad: +x.cantidad || 0
+    }));
+    S.movs = [];
+    localStorage.setItem('bq_base_fecha', d.exportado || new Date().toLocaleDateString('es-CL'));
+    localGuardar(); localEstado(); pintarModo(); refreshViews();
+    toast('✓ Base cargada: ' + S.inventario.length + ' registros');
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+
+// ── Descargar lo capturado ────────────────────────────────────────────
+$('lc-export').addEventListener('click', () => {
+  if (!S.movs.length) return toast('No hay movimientos que enviar', 'info');
+  if (!S.user) return toast('Pon tu nombre primero', 'err');
+  const hoy = new Date();
+  const stamp = hoy.toISOString().slice(0,10) + '_' + String(hoy.getHours()).padStart(2,'0')
+              + String(hoy.getMinutes()).padStart(2,'0');
+  const payload = {
+    tipo: 'movimientos-bodega',
+    version: 1,
+    usuario: S.user,
+    generado: hoy.toISOString(),
+    movimientos: S.movs
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 1)], { type:'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'movimientos_' + (S.user.replace(/\W+/g,'') || 'operario') + '_' + stamp + '.json';
+  document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+  localStorage.setItem('bq_ultimo_export', String(S.movs.length));
+  toast('✓ ' + S.movs.length + ' movimientos descargados — adjúntalos al correo');
+});
+
+// ── Limpiar solo después de confirmar el envío ────────────────────────
+$('lc-clear').addEventListener('click', () => {
+  if (!S.movs.length) return toast('No hay nada que limpiar', 'info');
+  if (!confirm('¿Ya enviaste el archivo y lo recibieron en la oficina?\n\n' +
+               'Se van a borrar ' + S.movs.length + ' movimientos de este teléfono.\n' +
+               'El inventario que ves se mantiene.')) return;
+  S.movs = [];
+  localGuardar(); localEstado();
+  toast('✓ Movimientos limpiados');
+});
+$('cfg-close').addEventListener('click', () => $('cfg').classList.remove('open'));
+$('cfg-save').addEventListener('click', () => {
+  S.user = $('cfg-user').value.trim();
+  localStorage.setItem('bq_user', S.user);
+  $('who-txt').textContent = S.user || '—';
+  if (modoElegido !== S.modo && S.movs.length && modoElegido === 'nube' &&
+      !confirm('Tienes ' + S.movs.length + ' movimientos sin enviar en este teléfono.\n\n' +
+               'Al pasar a modo en línea dejan de usarse. ¿Descargarlos primero?\n\n' +
+               'Aceptar = cambiar igual   ·   Cancelar = salir y descargarlos')) return;
+  localStorage.setItem('bq_modo', modoElegido);
+  if (!FB_HARDCODED.apiKey){
+    localStorage.setItem('bq_fb', JSON.stringify({
+      apiKey: $('cfg-key').value.trim(),
+      projectId: $('cfg-pid').value.trim(),
+      appId: $('cfg-app').value.trim()
+    }));
+  }
+  $('cfg').classList.remove('open');
+  location.reload();
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+//  ARRANQUE
+// ═══════════════════════════════════════════════════════════════════════
+$('who-txt').textContent = S.user || '—';
+$('in-elab').value = hoy();
+if (esLocal()){ localCargar(); localEstado(); refreshViews(); }
+else initFirebase();
+if (!S.user) setTimeout(() => $('cfg').classList.add('open'), 400);
+</script>
+</body>
+</html>
