@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Conectar la bodega a la nube</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0f14;--surface:#151820;--card:#1c2030;--border:#2a3045;
+  --gold:#f0b429;--red:#e63946;--green:#2ec4b6;--blue:#6eb5ff;
+  --text:#e8eaf0;--muted:#6b7280;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;
+     font-size:14px;line-height:1.6;padding:0 0 60px}
+header{background:var(--surface);border-bottom:2px solid var(--gold);padding:20px 22px;margin-bottom:26px}
+h1{font-family:'Bebas Neue';font-size:30px;letter-spacing:3px;color:var(--gold);line-height:1}
+header p{color:var(--muted);font-size:12px;margin-top:5px}
+.wrap{max-width:780px;margin:0 auto;padding:0 18px}
+
+.step{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:20px;margin-bottom:16px}
+.step.done{border-color:var(--green)}
+.hd{display:flex;align-items:center;gap:11px;margin-bottom:13px}
+.num{width:29px;height:29px;flex:none;border-radius:50%;background:var(--gold);color:#0d0f14;
+     display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.step.done .num{background:var(--green)}
+.hd h2{font-family:'Bebas Neue';font-size:20px;letter-spacing:1.5px;color:var(--text)}
+ol,ul{margin:9px 0 9px 21px}
+li{margin-bottom:7px}
+a{color:var(--blue)}
+b,strong{color:var(--text)}
+code{font-family:'JetBrains Mono';background:var(--bg);border:1px solid var(--border);
+     border-radius:4px;padding:1px 6px;font-size:12px;color:var(--gold)}
+pre{font-family:'JetBrains Mono';background:var(--bg);border:1px solid var(--border);
+    border-radius:7px;padding:13px;font-size:11.5px;overflow-x:auto;line-height:1.55;
+    white-space:pre;color:var(--text);margin:10px 0}
+.hint{color:var(--muted);font-size:12px}
+.warn{border-left:3px solid var(--gold);background:rgba(240,180,41,.07);border-radius:5px;
+      padding:10px 13px;font-size:12.5px;margin:11px 0}
+
+textarea,input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:7px;
+  padding:11px;color:var(--text);font-family:'JetBrains Mono';font-size:12.5px}
+textarea{min-height:130px;resize:vertical}
+textarea:focus,input:focus{outline:none;border-color:var(--gold)}
+label{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;
+      letter-spacing:1px;margin:11px 0 5px}
+
+button{font-family:'Bebas Neue';font-size:16px;letter-spacing:1.5px;border:none;border-radius:8px;
+       padding:13px 20px;cursor:pointer;background:var(--gold);color:#0d0f14}
+button:disabled{background:var(--border);color:var(--muted);cursor:not-allowed}
+button.ghost{background:none;border:1px solid var(--border);color:var(--muted)}
+button.green{background:var(--green);color:#0d0f14}
+.copy{font-family:'Inter';font-size:11px;letter-spacing:0;padding:5px 11px;background:var(--surface);
+      border:1px solid var(--border);color:var(--muted);border-radius:5px}
+.row{display:flex;gap:9px;flex-wrap:wrap;margin-top:13px}
+
+.chk{display:flex;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);align-items:flex-start}
+.chk:last-child{border-bottom:none}
+.ico{width:20px;flex:none;text-align:center;font-size:14px}
+.chk .t{font-weight:600;font-size:13px}
+.chk .d{font-size:12px;color:var(--muted)}
+.chk.ok .ico{color:var(--green)} .chk.ok .t{color:var(--green)}
+.chk.no .ico{color:var(--red)}   .chk.no .t{color:var(--red)}
+.chk.run .ico{color:var(--gold)}
+.chk.idle{opacity:.4}
+.fix{background:rgba(230,57,70,.09);border-left:3px solid var(--red);border-radius:5px;
+     padding:9px 12px;font-size:12.5px;margin-top:7px}
+.fix b{color:var(--red)}
+
+#final{display:none}
+#final.on{display:block}
+.big{display:block;text-align:center;background:var(--surface);border:1px solid var(--border);
+     border-radius:9px;padding:15px;margin-bottom:9px;text-decoration:none;color:var(--text)}
+.big:hover{border-color:var(--gold)}
+.big span{display:block;font-family:'Bebas Neue';font-size:19px;letter-spacing:1.5px;color:var(--gold)}
+.big small{color:var(--muted);font-size:11.5px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Conectar la bodega a la nube</h1>
+    <p>Crea la base compartida en Firebase y comprueba que el celular y el dashboard se hablan.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ═══ 1 ═══ -->
+  <div class="step" id="s1">
+    <div class="hd"><div class="num">1</div><h2>Crear el proyecto en Firebase</h2></div>
+    <p class="hint">Esto solo lo puedes hacer tú: hay que iniciar sesión con tu cuenta de Google. Son cuatro pantallas.</p>
+    <ol>
+      <li>Entra a <a href="https://console.firebase.google.com/" target="_blank" rel="noopener">console.firebase.google.com</a>
+          → <b>Crear un proyecto</b> → nómbralo <code>bodega-quinta</code>. Puedes desactivar Google Analytics.</li>
+      <li>Menú lateral → <b>Firestore Database</b> → <b>Crear base de datos</b> →
+          modo <b>producción</b> → ubicación <code>southamerica-east1</code>.</li>
+      <li>Menú lateral → <b>Authentication</b> → <b>Comenzar</b> → pestaña <b>Sign-in method</b> →
+          habilita <b>Anónimo</b>.
+          <div class="hint">Sin este paso nada escribe: los operarios entran sin usuario y sin contraseña,
+          pero Firebase igual les da una identidad interna para poder aplicar las reglas.</div></li>
+      <li>Rueda dentada ⚙ → <b>Configuración del proyecto</b> → baja hasta <b>Tus apps</b> →
+          icono <code>&lt;/&gt;</code> (Web) → registra la app. Te muestra un bloque de código:
+          cópialo entero, es lo que pegas abajo.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ 2 ═══ -->
+  <div class="step" id="s2">
+    <div class="hd"><div class="num">2</div><h2>Pegar las reglas de seguridad</h2></div>
+    <p>En Firebase → <b>Firestore Database</b> → pestaña <b>Reglas</b>: borra lo que haya, pega esto y presiona <b>Publicar</b>.</p>
+    <pre id="rules">rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function auth() { return request.auth != null; }
+
+    match /inventario/{doc}  { allow read, write: if auth(); }
+    match /posiciones/{ubic} { allow read, write: if auth(); }
+
+    match /movimientos/{doc} {
+      allow read, create: if auth();
+      allow update, delete: if false;
+    }
+  }
+}</pre>
+    <button class="copy" onclick="copiar('rules',this)">Copiar reglas</button>
+    <div class="warn">Si dejas las reglas de prueba que Firebase pone por defecto, en 30 días
+      la base deja de aceptar escrituras y la app empieza a fallar sin avisar. Publica estas.</div>
+  </div>
+
+  <!-- ═══ 3 ═══ -->
+  <div class="step" id="s3">
+    <div class="hd"><div class="num">3</div><h2>Pegar la configuración</h2></div>
+    <p>Pega aquí el bloque completo que te dio Firebase en el paso 1.4. No hace falta limpiarlo.</p>
+    <label>Bloque de configuración</label>
+    <textarea id="paste" spellcheck="false" placeholder='const firebaseConfig = {
+  apiKey: "AIzaSy...",
+  authDomain: "bodega-quinta.firebaseapp.com",
+  projectId: "bodega-quinta",
+  storageBucket: "bodega-quinta.appspot.com",
+  messagingSenderId: "123456789",
+  appId: "1:123456789:web:abc123"
+};'></textarea>
+    <div id="parsed" class="hint" style="margin-top:9px"></div>
+    <div class="warn">Estos tres datos <b>no son secretos</b>. Van dentro de cualquier página web y
+      cualquiera que abra tu sitio los puede ver — lo que protege la base son las reglas del paso 2,
+      no ocultar la clave. Por eso me los puedes pasar sin problema. Lo que <b>nunca</b> debes
+      compartir ni pegar aquí es la contraseña de tu cuenta de Google, un token de GitHub ni el
+      archivo de <i>cuenta de servicio</i> que Firebase ofrece en la pestaña «Cuentas de servicio»:
+      ese último sí abre la base entera y se salta las reglas.</div>
+    <div class="row">
+      <button id="probar" disabled>PROBAR LA CONEXIÓN</button>
+    </div>
+  </div>
+
+  <!-- ═══ 4 ═══ -->
+  <div class="step" id="s4">
+    <div class="hd"><div class="num">4</div><h2>Diagnóstico</h2></div>
+    <div id="checks">
+      <div class="chk idle" data-k="cfg"><div class="ico">○</div><div><div class="t">Configuración legible</div><div class="d">Que estén las tres piezas y con la forma correcta</div></div></div>
+      <div class="chk idle" data-k="net"><div class="ico">○</div><div><div class="t">Descarga del motor de Firebase</div><div class="d">Bajar la librería desde Google</div></div></div>
+      <div class="chk idle" data-k="sdk"><div class="ico">○</div><div><div class="t">El proyecto existe</div><div class="d">Conectar con bodega-quinta</div></div></div>
+      <div class="chk idle" data-k="auth"><div class="ico">○</div><div><div class="t">Ingreso anónimo</div><div class="d">Que el operario pueda entrar sin usuario</div></div></div>
+      <div class="chk idle" data-k="write"><div class="ico">○</div><div><div class="t">Escritura</div><div class="d">Guardar un dato de prueba</div></div></div>
+      <div class="chk idle" data-k="read"><div class="ico">○</div><div><div class="t">Lectura</div><div class="d">Volver a leerlo</div></div></div>
+      <div class="chk idle" data-k="clean"><div class="ico">○</div><div><div class="t">Limpieza</div><div class="d">Borrar el dato de prueba</div></div></div>
+    </div>
+    <div id="fixes"></div>
+  </div>
+
+  <!-- ═══ 5 ═══ -->
+  <div class="step done" id="final">
+    <div class="hd"><div class="num">✓</div><h2>Conectado</h2></div>
+    <p>Guardé la configuración en este equipo. Si abriste esta página desde la misma dirección
+       de GitHub Pages donde están los otros dos archivos, ya quedaron configurados solos —
+       ábrelos y deberían decir «en línea».</p>
+    <div style="margin-top:13px">
+      <a class="big" href="./bodega_movil.html"><span>📱 Abrir la app del celular</span><small>bodega_movil.html</small></a>
+      <a class="big" href="./dashboard_elevacion.html"><span>🖥 Abrir el dashboard</span><small>dashboard_elevacion.html</small></a>
+    </div>
+    <p class="hint" style="margin-top:14px">Para dejar la conexión fija dentro de los archivos y no
+      configurar equipo por equipo, copia este bloque y pégalo en <code>bodega_movil.html</code> y
+      <code>dashboard_elevacion.html</code>, reemplazando el <code>FB_HARDCODED</code> vacío:</p>
+    <pre id="hard">—</pre>
+    <button class="copy" onclick="copiar('hard',this)">Copiar bloque</button>
+  </div>
+
+</div>
+
+<script type="module">
+const $ = id => document.getElementById(id);
+let CFG = null;
+
+window.copiar = (id, btn) => {
+  navigator.clipboard.writeText($(id).textContent).then(() => {
+    const t = btn.textContent; btn.textContent = '✓ Copiado';
+    setTimeout(() => btn.textContent = t, 1600);
+  });
+};
+
+// ── Lee el bloque pegado, venga como venga ──
+function extraer(txt){
+  const val = k => {
+    const m = txt.match(new RegExp(k + '\\s*[:=]\\s*["\'`]([^"\'`]+)["\'`]'));
+    return m ? m[1].trim() : '';
+  };
+  return { apiKey: val('apiKey'), projectId: val('projectId'), appId: val('appId') };
+}
+function revisar(){
+  const c = extraer($('paste').value);
+  const falta = [];
+  if (!/^AIza[\w-]{20,}$/.test(c.apiKey)) falta.push('apiKey');
+  if (!/^[a-z0-9-]{4,}$/.test(c.projectId)) falta.push('projectId');
+  if (!/^\d+:\d+:web:[a-z0-9]+$/i.test(c.appId)) falta.push('appId');
+  if (falta.length){
+    CFG = null;
+    $('parsed').innerHTML = $('paste').value.trim()
+      ? '<span style="color:var(--red)">Falta o viene mal: <b>' + falta.join(', ') + '</b></span>'
+      : '';
+  } else {
+    CFG = c;
+    $('parsed').innerHTML = '<span style="color:var(--green)">✓ Proyecto <b>' + c.projectId + '</b> — listo para probar</span>';
+  }
+  $('probar').disabled = !CFG;
+}
+$('paste').addEventListener('input', revisar);
+
+// ── Diagnóstico ──
+const marca = (k, estado, detalle) => {
+  const el = document.querySelector('[data-k="' + k + '"]');
+  el.className = 'chk ' + estado;
+  el.querySelector('.ico').textContent = { run:'◐', ok:'✓', no:'✗' }[estado] || '○';
+  if (detalle) el.querySelector('.d').textContent = detalle;
+};
+const arreglo = (titulo, texto) => {
+  $('fixes').innerHTML += '<div class="fix"><b>' + titulo + '</b><br>' + texto + '</div>';
+};
+
+// Traduce el error de Firebase a algo accionable
+function traducir(e){
+  const c = (e && e.code) || '';
+  if (c.includes('operation-not-allowed'))
+    return ['Falta habilitar el ingreso anónimo',
+      'Firebase → <b>Authentication</b> → pestaña <b>Sign-in method</b> → <b>Anónimo</b> → habilitar. Es el paso 1.3.'];
+  if (c.includes('configuration-not-found'))
+    return ['Authentication no está iniciado',
+      'Firebase → <b>Authentication</b> → botón <b>Comenzar</b>. Después habilita Anónimo.'];
+  if (c.includes('api-key-not-valid') || c.includes('invalid-api-key'))
+    return ['La apiKey no es válida',
+      'Vuelve a ⚙ Configuración del proyecto → Tus apps y copia el bloque otra vez, completo.'];
+  if (c.includes('permission-denied'))
+    return ['Las reglas están rechazando la escritura',
+      'Firestore → pestaña <b>Reglas</b> → pega las del paso 2 y presiona <b>Publicar</b>. Si ya lo hiciste, espera un minuto: tardan un poco en propagarse.'];
+  if (c.includes('unavailable') || c.includes('not-found') || c.includes('failed-precondition'))
+    return ['No encuentro la base de datos',
+      'Puede que falte crear Firestore (paso 1.2) o que el <code>projectId</code> esté mal escrito. Revisa que en Firebase → Firestore Database ya veas la base creada.'];
+  if (/Failed to fetch|dynamically imported|NetworkError|Load failed/i.test((e && e.message) || ''))
+    return ['El navegador no pudo llegar a Google',
+      'Revisa la conexión a internet. En la red de la empresa puede haber un cortafuegos bloqueando <code>gstatic.com</code> o <code>googleapis.com</code>.'];
+  if (c.includes('network') || c.includes('unauthorized-domain'))
+    return ['El navegador no pudo llegar a Firebase',
+      'Revisa la conexión. Si estás en la red de la empresa, puede haber un cortafuegos bloqueando <code>googleapis.com</code>.'];
+  return ['Error inesperado', (e && (e.message || e.code)) || String(e)];
+}
+
+$('probar').addEventListener('click', async () => {
+  $('fixes').innerHTML = '';
+  $('final').classList.remove('on');
+  $('probar').disabled = true;
+  ['cfg','net','sdk','auth','write','read','clean'].forEach(k => marca(k, 'idle'));
+
+  marca('cfg', 'ok', 'Proyecto ' + CFG.projectId);
+
+  let FB, FS, AU, app, db;
+  try {
+    marca('net', 'run', 'descargando…');
+    [FB, FS, AU] = await Promise.all([
+      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js'),
+      import('https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js')
+    ]);
+    marca('net', 'ok', 'librería descargada');
+  } catch(e){
+    marca('net', 'no', 'no se pudo descargar');
+    arreglo('Este equipo no pudo descargar la librería de Firebase',
+      'No es un problema de tu proyecto ni de las claves — el navegador no llegó a Google. Revisa que haya internet, '
+      + 'y si estás en la red de la empresa pide que dejen pasar <code>gstatic.com</code> y <code>googleapis.com</code>. '
+      + 'También pasa si abriste esta página sin conexión: los tres archivos necesitan internet la primera vez.');
+    $('probar').disabled = false; return;
+  }
+
+  try {
+    marca('sdk', 'run', 'conectando…');
+    app = FB.initializeApp({
+      apiKey: CFG.apiKey, projectId: CFG.projectId, appId: CFG.appId,
+      authDomain: CFG.projectId + '.firebaseapp.com'
+    }, 'diag-' + Math.floor(performance.now()));
+    db = FS.getFirestore(app);
+    marca('sdk', 'ok', 'proyecto ' + CFG.projectId);
+  } catch(e){
+    marca('sdk', 'no', 'no se pudo conectar');
+    const [t, d] = traducir(e); arreglo(t, d);
+    $('probar').disabled = false; return;
+  }
+
+  let uid;
+  try {
+    marca('auth', 'run', 'entrando…');
+    const cred = await AU.signInAnonymously(AU.getAuth(app));
+    uid = cred.user.uid;
+    marca('auth', 'ok', 'identidad ' + uid.slice(0, 8) + '…');
+  } catch(e){
+    marca('auth', 'no', 'rechazado');
+    const [t, d] = traducir(e); arreglo(t, d);
+    $('probar').disabled = false; return;
+  }
+
+  // Se prueba contra 'posiciones', que las reglas permiten y ninguna pantalla escucha
+  const ref = FS.doc(db, 'posiciones', '__diagnostico__');
+  try {
+    marca('write', 'run', 'guardando…');
+    await FS.setDoc(ref, { prueba:true, uid, cuando: FS.serverTimestamp() });
+    marca('write', 'ok', 'la base acepta escrituras');
+  } catch(e){
+    marca('write', 'no', 'rechazada');
+    const [t, d] = traducir(e); arreglo(t, d);
+    $('probar').disabled = false; return;
+  }
+
+  try {
+    marca('read', 'run', 'leyendo…');
+    const snap = await FS.getDoc(ref);
+    if (!snap.exists()) throw new Error('el dato no volvió');
+    marca('read', 'ok', 'lectura correcta');
+  } catch(e){
+    marca('read', 'no', 'no se pudo leer');
+    const [t, d] = traducir(e); arreglo(t, d);
+    $('probar').disabled = false; return;
+  }
+
+  try {
+    marca('clean', 'run', 'borrando…');
+    await FS.deleteDoc(ref);
+    marca('clean', 'ok', 'sin residuos en la base');
+  } catch(e){
+    marca('clean', 'no', 'quedó un documento de prueba');
+    arreglo('No pude borrar el dato de prueba',
+      'No es grave: entra a Firestore → colección <code>posiciones</code> y borra el documento <code>__diagnostico__</code> a mano.');
+  }
+
+  // Todo bien: se deja la config para los otros dos archivos
+  localStorage.setItem('bq_fb', JSON.stringify(CFG));
+  $('hard').textContent =
+    'const FB_HARDCODED = {\n' +
+    '  apiKey:    "' + CFG.apiKey + '",\n' +
+    '  projectId: "' + CFG.projectId + '",\n' +
+    '  appId:     "' + CFG.appId + '"\n' +
+    '};';
+  $('final').classList.add('on');
+  $('s3').classList.add('done');
+  $('s4').classList.add('done');
+  $('final').scrollIntoView({ behavior:'smooth', block:'start' });
+  $('probar').disabled = false;
+});
+
+// Si ya había una configuración guardada en este equipo, se precarga
+try {
+  const prev = JSON.parse(localStorage.getItem('bq_fb') || 'null');
+  if (prev && prev.apiKey){
+    $('paste').value = 'apiKey: "' + prev.apiKey + '"\nprojectId: "' + prev.projectId + '"\nappId: "' + prev.appId + '"';
+    revisar();
+  }
+} catch(_){}
+</script>
+</body>
+</html>

@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0d0f14">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Bodega">
+<meta name="theme-color" content="#0d0f14">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>BODEGA MÓVIL — Quinta</title>
 <style>
@@ -388,6 +392,23 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
     <button class="scanbtn green" id="cfg-save">GUARDAR</button>
     <div style="height:8px"></div>
     <button class="scanbtn ghost" id="cfg-close">Cerrar</button>
+  </div>
+</div>
+
+<div class="ov" id="aviso-file">
+  <div class="ov-box">
+    <h2 style="color:var(--red)">⚠ Falta subirla al sitio</h2>
+    <p style="font-size:13.5px;line-height:1.6;color:var(--text)">Abriste el archivo
+      directamente desde el teléfono. Así <b>la cámara no puede encenderse</b>: los navegadores
+      solo dan acceso a la cámara cuando la página viene de una dirección que empieza con
+      <b>https://</b>. No es un problema de permisos ni del teléfono.</p>
+    <p class="hint" style="margin-top:11px">Sube los archivos a tu sitio de GitHub Pages y
+      abre la app desde esa dirección. Ahí la cámara funciona, y además se puede instalar
+      como app para que abra sin señal.</p>
+    <p class="hint" style="margin-top:11px">Mientras tanto puedes seguir usándola: escribe
+      los códigos a mano en el campo que aparece al presionar cualquier botón de escanear.</p>
+    <div style="height:14px"></div>
+    <button class="scanbtn ghost" id="aviso-ok">Entendido, seguir a mano</button>
   </div>
 </div>
 
@@ -1480,6 +1501,32 @@ $('who-txt').textContent = S.user || '—';
 $('in-elab').value = hoy();
 if (esLocal()){ localCargar(); localEstado(); refreshViews(); }
 else initFirebase();
+
+// ═══════════════════════════════════════════════════════════════════════
+//  INSTALACIÓN COMO APP
+//  El service worker guarda la app en el teléfono. Sin esto, abrirla en
+//  la cámara de frío sin señal daría la pantalla de "sin conexión".
+// ═══════════════════════════════════════════════════════════════════════
+const enHttps = location.protocol === 'https:' || location.hostname === 'localhost';
+
+if ('serviceWorker' in navigator && enHttps){
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    reg.addEventListener('updatefound', () => {
+      const nuevo = reg.installing;
+      if (!nuevo) return;
+      nuevo.addEventListener('statechange', () => {
+        if (nuevo.state === 'installed' && navigator.serviceWorker.controller)
+          toast('Hay una versión nueva — ciérrala y ábrela otra vez', 'info');
+      });
+    });
+  }).catch(() => {});
+}
+
+// Si se abrió como archivo suelto, la cámara nunca va a funcionar: hay que decirlo
+if (location.protocol === 'file:'){
+  setTimeout(() => $('aviso-file').classList.add('open'), 600);
+}
+$('aviso-ok').addEventListener('click', () => $('aviso-file').classList.remove('open'));
 if (!S.user) setTimeout(() => $('cfg').classList.add('open'), 400);
 </script>
 </body>
