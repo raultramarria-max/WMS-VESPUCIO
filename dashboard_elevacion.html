@@ -32,7 +32,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
 .print-opt .t{font-size:13px;font-weight:600;display:block}
 .print-opt .d{font-size:11px;color:var(--muted);display:block;margin-top:2px}
 .btn:hover{opacity:.85}
-#file-input,#movs-input{display:none}
+#file-input,#movs-input,#sku-input{display:none}
 .main{display:grid;grid-template-columns:310px 1fr;height:calc(100vh - 62px)}
 .sidebar{background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
 .sb-sec{padding:13px 15px;border-bottom:1px solid var(--border)}
@@ -185,6 +185,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:12p
     <button class="btn btn-outline" onclick="exportarParaCelulares()" title="Genera el archivo que se carga en cada teléfono">📲 Base p/ celulares</button>
     <label class="btn btn-gold" for="movs-input" title="Aplicar los movimientos que mandaron los operarios">📥 Movimientos</label>
     <input type="file" id="movs-input" accept=".json,application/json" multiple onchange="cargarMovimientos(event)">
+    <label class="btn btn-ghost" for="sku-input" title="Cargar el Excel maestro de SKU">🏷 SKU</label>
+    <input type="file" id="sku-input" accept=".xlsx,.xls" onchange="cargarSKU(event)">
+    <button class="btn btn-outline" onclick="abrirInforme()" title="Bitácora histórica de todos los movimientos">📊 Informe</button>
     <button class="btn btn-gold" onclick="openNew()">＋ Ingresar</button>
     <button class="btn btn-print" onclick="openPrintMenu()">⬇ Etiquetas PDF</button>
     <button class="btn btn-danger" onclick="clearAll()">🗑</button>
@@ -350,6 +353,31 @@ var zonaFilter = 'A';
 var editUbic   = null;   // posición abierta en el modal
 var editingId  = null;   // id del registro en edición (null = alta nueva)
 var seq        = 1;
+// ═══ CATÁLOGO DE SKU ═══════════════════════════════════════════════
+// 516 productos [código, descripción, categoría], ordenados por categoría.
+// Es el valor de fábrica: si cargas un Excel de SKU nuevo desde el
+// dashboard, ese reemplaza a este y viaja a los celulares en la base.
+var SKU_BASE = [["103104","ACEITE VEGETAL 500CC EGC","Aceite"],["103105","ACEITE VEGETAL 1000 CC. EGC","Aceite"],["107308","ACEITE FRITO MASTER DIWATTS","Aceite"],["104001","AZUCAR FLOR ALTO LA CRUZ","Azucar"],["104003","AZUCAR FLOR ANTI-HUMEDAD MANAR","Azucar"],["104004","AZUCAR RUBIA EGC","Azucar"],["104006","AZUCAR GRANULADA EGC","Azucar"],["405418","AZUCAR FLOR 5KG MEL ALIMENTOS","Azucar"],["400101","BOLSA 30X32 CM 35 MICRAS","Bolsas"],["400104","BOLSA DISCO HOJA 35X35 CM x35 MICRAS","Bolsas"],["400202","BOLSA PREPICADA 50x75","Bolsas"],["400203","BOLSA PREPICADA BANDEJA (22+60+22)104x90","Bolsas"],["400205","BOLSA PEBD 40x42 CM x35 MICRAS","Bolsas"],["400210","BOLSA PREPICADA BANDEJA  100*90 COLOR AZUL","Bolsas"],["402254","BOLSA PREPICADA BANDEJA 100X90","Bolsas"],["402263","BOLSA PREPICADA BANDEJA  100*90 COLOR AZUL ASTRA","Bolsas"],["501114","BOLSA COLOR AZUL 100 X 120 X 0,035 SIGNO","Bolsas"],["107276","CAJA TORTA MEDIANA PROSERVAR","Caja"],["107361","CAJA  PTG AZUL 15PP ALTA SYCOR","Caja"],["107362","CAJA PTG 15PP JUMBO SYCOR","Caja"],["107363","CAJA PTG 15PP SISA SYCOR","Caja"],["107364","CAJA TORTA MEDIANA SYCOR","Caja"],["107365","CAJA PRODUCTO SECO (PS) SYCOR","Caja"],["107366","CAJA MADRE DE PLANCHAS (PL) SYCOR","Caja"],["107367","CAJA DE ENCOMIENDA (EN) SYCOR","Caja"],["402251","CAJA PTG 15PP JUMBO VTM SUR","Caja"],["402252","CAJA PTG 15PP SISA VTM SUR","Caja"],["402253","CAJA TORTA MEDIANA VTM SUR","Caja"],["403308","CAJA MADRE DE PLANCHAS (PL) PAIMASA","Caja"],["403310","CAJA  PTG AZUL 15PP ALTA","Caja"],["403315","CAJA DE PASTELES PAIMASA","Caja"],["403393","CAJA PTG 15PP SISA PROSERVAR","Caja"],["403394","CAJA PTG 15PP JUMBO PROSERVAR","Caja"],["405383","ESTUCHE GALLETAS VERA Y GIANNINI","Caja"],["405419","CAJA DOS TORTAS PROSERVAR","Caja"],["405503","CAJA PASTELES ASTRA","Caja"],["405696","CAJA PASTELES 600X325X120 ASTRA","Caja"],["405790","CAJA PTG 15PP JUMBO FULL CARTON","Caja"],["405791","CAJA PTG 15PP SISA FULL CARTON","Caja"],["405792","CAJA TORTA MEDIANA FULL CARTON","Caja"],["501146","CAJA PLASTICA AZUL QUINTA","Caja"],["107292","DISCO CARTÓN CORRUGADO 19 CM EHLAN","Carton"],["107316","PLANCHA DE CARTON 1X1,20 ASTRA","Carton"],["107318","DISCO CARTÓN CAFE CORRUGADO 19 CM ASTRA","Carton"],["107357","DISCO CARTÓN BLANCO 19 FPS","Carton"],["393320","HOJA SEPARADORA TORTA DIAMETRO 230 MMS.","Carton"],["393321","HOJA SEPARADORA TORTA MEDIANA DIAMETRO 210 MMS.","Carton"],["393322","HOJA SEPARADORA TARTALETA DIAMETRO 255 MMS.","Carton"],["402257","HOJA SEPARADORA TORTA DIAMETRO 230 MMS ASTRA","Carton"],["403015","PAPEL BEIGE 38.5 x 44.5 ARRIAZA","Carton"],["403100","DISCO CARTON BLANCO 24 JUMBO ARRIAZA","Carton"],["403101","DISCO CARTON BLANCO 19,5 JUMBO ARRIAZA","Carton"],["403103","DISCO CARTON MH 15 PP ARRIAZA","Carton"],["403104","HUINCHA CARTON MH 8.5x75 ARRIAZA","Carton"],["403108","DISCO CARTON BLANCO 17CM ARRIAZA","Carton"],["403245","Borde G 220x25 VERTIENTES","Carton"],["403258","CAPSULAS DE PAPEL NUMERO 11 FOOD PACK","Carton"],["403266","PLANCHA DE CARTON 1X1,20 EHLAN","Carton"],["403271","DISCO CARTÓN CORRUGADO 15,5 CM EHLAN","Carton"],["403278","DISCO CARTON CAFE CORRUGADO 15,5CM CM ASTRA","Carton"],["403314","DISCO DE PAPEL PQQ CURICO","Carton"],["403368","HOJA SENCILLA PROSERVAR","Carton"],["403373","HOJA SEPARADORA PLANCHAS PROSERVAR","Carton"],["403375","DISCO DE CARTON 15,5CM VTM","Carton"],["403383","DISCO CARTON BLANCO 19 ECOPLASTIC","Carton"],["403395","PLANCHA DE CARTON 1X1,20 PROSERVAR","Carton"],["405170","DISCO CARTON 19CM MICROCORRUGADO ALIMPACK","Carton"],["405319","LAMINA ACETATO TRANSPARENTE 7x60 CM FPS","Carton"],["405346","DISCO CARTON BLANCO 17CM FPS","Carton"],["405347","DISCO CARTON BLANCO 24 FPS","Carton"],["405422","MOLDES PAPEL BASE TARTA MOLDESPAC","Carton"],["405438","CARTULINA BLANCA EMPLACADA DIAMTERO 19CM ALIMPACK","Carton"],["405582","DISCO MICROCORRUGADO EMPLACADO 15,5 CM DIÁMETRO ASTRA","Carton"],["405583","DISCO MICROCORRUGADO EMPLACADO 19 CM DIÁMETRO ASTRA","Carton"],["405739","DISCO CARTON BLANCO 17 CM PRAGGA","Carton"],["405740","DISCO CARTON BLANCO 19 CM PRAGGA","Carton"],["405741","DISCO CARTON BLANCO 24 CM PRAGGA","Carton"],["405789","HOJA SEPARADORA TORTA DIAMETRO 230 MMS FULL CARTON","Carton"],["405793","PLANCHA DE CARTON 1X1,20 FULL CARTON","Carton"],["101002","CACAO AMARGO PURATOS","Chocolate"],["107108","DECORCREM NEGRO PURATOS","Chocolate"],["107127","DECORCREM BLANCO 4k PURATOS","Chocolate"],["107133","GANACHE PURATOS","Chocolate"],["107170","GRANILLO CHOCOLATE MANAR","Chocolate"],["107197","COBERTURA CHOCOLATE BLANCO","Chocolate"],["107221","CONJUNTO DISEÑO DÍA DEL PADRE AMBROSIA","Chocolate"],["107249","COBERTURA CHOCOLATES MONEDAS PURATOS","Chocolate"],["107296","CINTA COLOR NIÑO ZUKKER","Chocolate"],["107303","CURLS CHOCOLATE PURATOS","Chocolate"],["107325","CHOCOLATE ARCOÍRIS  AMBROSIA","Chocolate"],["107349","FLOR DE LOTO CHOCOLATE MORADA AMBROSIA","Chocolate"],["107356","CHOCOLATE SEMI AMARGO 54% MEL","Chocolate"],["107406","OJITOS HALLOWEEN AMBROSIA","Chocolate"],["393399","PALITOS DE CHOCOLATE PURATOS","Chocolate"],["393400","COVER PASTELERÍA U2 SEMIAMARGO GOTA PURATOS","Chocolate"],["404309","CINTA NEGRA GC ZUKKER","Chocolate"],["405133","RALLADO NEGRO 3mm ZUKKER","Chocolate"],["405134","TRIANGULO NEGRO 45mm ZUKKER","Chocolate"],["405311","TRIANGULO BLANCO RAYADO ROJO","Chocolate"],["405332","GRANILLO DE COLORES MANAR","Chocolate"],["405350","MOSTACILLA CIRCULO 6 COLORES AMBROSIA","Chocolate"],["405508","ZANAHORIA GANACHE CHOCOLATE AMBROSIA","Chocolate"],["405531","RALLADO 3mm BICOLOR BLANCO-ROSADO ZUKKER","Chocolate"],["405541","CÍRCULO BLANCO #80 DDM JUMBO 2025","Chocolate"],["405694","MASA KNAFE SUK","Chocolate"],["405728","CINTA BICOLOR NARANJA ZUKKER","Chocolate"],["405730","PLACA TORTA VIENA ZUKKER","Chocolate"],["405731","ROSA GANACHE ROSADO CLARO AMBROSIA","Chocolate"],["405732","MOSTACILLA CORAZÓN VALENTÍN AMBROSIA","Chocolate"],["405835","AMBROSITO 30X90 CAROZZI","Chocolate"],["402135","COLORANTE AZUL BRILLANTE FLORAMATIC","Colorante"],["405304","COLORANTE ROJO POLVO","Colorante"],["405421","COLORANTE NARANJA FLORAMATIC","Colorante"],["103612","CREMA VEGETAL MASTER MARTINI","Cremas"],["107098","CREMA PASTELERA ESPECIAL PURATOS","Cremas"],["107104","CREMA LACTEA DIWATTS","Cremas"],["107142","CREMA LACTEA SOPROLE","Cremas"],["107209","CREMA WHIP TOPPIN RICH","Cremas"],["107237","CREMA CHOCOLATE RICHS","Cremas"],["107242","CREMA RELLENO SABOR NARANJA ESP. QUINTA SC 1X5 Kg","Cremas"],["107283","CREMA CHANTIFESTA RICHS","Cremas"],["107337","CREMA AMBIENTE PURATOS","Cremas"],["107342","CREMA CHANTYPACK PURATOS","Cremas"],["107417","CREMA PASTELERA NARANJA BAKELS","Cremas"],["170179","CREMA AMBIENTE ICING PURATOS","Cremas"],["405115","CREMA PASSIONATA","Cremas"],["405161","CREMA NATA RICH","Cremas"],["405214","CREMYVIT NARANJA TM1 PURATOS","Cremas"],["405533","ULTRA RICH CLASICA UHT","Cremas"],["405556","RELLENO CHOCOLATE CREAM BAKELS","Cremas"],["405570","PM CREAM VELVET BAKELS","Cremas"],["107281","BLISTER 7189 1 PASTEL BUENAVENTURA","Cupula"],["107300","COMBO 88 ALTA 12 PP MOLDES PAC","Cupula"],["107323","COMBO 88 ALTA 12 PP LISA MOLDES PAC","Cupula"],["107339","CUPULA TARTA 1025-3 MOLDES PAC","Cupula"],["107344","CUPULA TORTA ALTA  15PP (98-5) MOLDESPAC","Cupula"],["107345","CUPULA 170BX DEANDES","Cupula"],["107402","CUPULA MINI TORTA BASE NEGRA 15,5x7,5 FOOD PACK","Cupula"],["403208","BLISTER PARA BERLINES ART 401-A DEANDES","Cupula"],["403210","CUPULA TORTA 15PP (98-45) MONSALVE CENCOSUD","Cupula"],["403219","CAPSULA OVALADA N° 10 ARRIAZA","Cupula"],["403225","CUPULA 170B DEANDES","Cupula"],["403231","CUPULA TORTA ALTA  15PP (98-5) MONSALVE CENCOSUD","Cupula"],["403244","CUPULA 271 BX DEANDES","Cupula"],["403248","CUPULA 15 PP ALTA WALMART","Cupula"],["403249","CUPULA 15 PP BAJA WALMART","Cupula"],["403251","CUPULA 98-9 ALTA 12 PP MONSALVE","Cupula"],["403338","BLISTER 7189 1 PASTEL DEANDES","Cupula"],["405226","CUPULA 170 BX BUENAVENTURA","Cupula"],["405227","CUPULA 271 BX BUENAVENTURA","Cupula"],["405278","CUPULA TORTA 15PP (98-45) MOLDESPAC","Cupula"],["405283","CUPULA TORTA ALTA SISA FPS","Cupula"],["405284","CUPULA TORTA ALTA CON TOPE WALMART FPS","Cupula"],["405374","COMBO 88 ALTA 12 PP FOOD PACK","Cupula"],["405375","CUPULA TORTA ALTA  15PP (98-5) FOOD PACK","Cupula"],["405380","CUPULA TORTA ALTA  15PP (98-5) FPS","Cupula"],["405444","CUPULA TORTA 15 PP ALTA COEXPAN","Cupula"],["405445","BASE TORTA 15PP ALTA COEXPAN","Cupula"],["405489","CUPULA TARTA 1025-5 MOLDES PAC","Cupula"],["405501","BASE TORTA CON TOPE COEXPAN","Cupula"],["405594","CUPULA TORTA 15PP OSKUPACK","Cupula"],["405635","CLAMSHELL 3-3 BAT RECT. ECOPLASTIC","Cupula"],["405770","CUPULA TORTA 15 PP H112 ALTA COEXPAN","Cupula"],["405786","BLISTER 243BBTA DEANDES","Cupula"],["201002","DESMOLDANTE PARA BATIDOS PURATOS","Desmoldante"],["402255","CINTA DE EMBALAJE 72x100 SOLUTION","Empaque"],["405336","CINTA DE EMBALAJE 72x100 REMINISEN","Empaque"],["106302","CANELA EN POLVO ALTO LA CRUZ","Esencia"],["106401","CAFE POLVO WINKLER","Esencia"],["107134","COCO RALLADO ALTO LA CRUZ","Esencia"],["107148","SABOR AROMA LUCUMA FRANCIAAROMA","Esencia"],["107152","NUEZ PICADILLO CAMPOS DE CHILE","Esencia"],["107225","CAFE POLVO ICB","Esencia"],["107326","QUINOA PERLA DE COLORES ZUKKER","Esencia"],["107351","PASA MORENA","Esencia"],["402130","NUEZ PICADILLO LAS TRES ERRES","Esencia"],["405305","ESENCIA CAFE CARAMELO SABORES Y FRAGANCIA","Esencia"],["405543","NUEZ PICADILLO CAMPOS","Esencia"],["405840","ALMENDRAS GRAJEADAS CON BRILLO 1X10 KG CAROZZI","Esencia"],["107227","ETIQUETA CIRCULAR 90 IMPRESA TORTA MERENGUE FRAMBUESA ESPECIAL JUMBO","Etiquetas"],["107228","ETIQUETA CIRCULAR 90 IMPRESA TORTA MERENGUE LÚCUMA ESPECIAL JUMBO","Etiquetas"],["107291","ETIQUETA GENERICA TORTA PANQUEQUE LÚCUMA CROCANTE","Etiquetas"],["107298","ETIQUETA GENÉRICA TORTA RAINBOW","Etiquetas"],["107327","ETIQUETA GENERICA TORTA HOJA MANJAR CHOCOLATE","Etiquetas"],["107407","ETIQUETA GALLETA AMERICAN CRISPY CHIP DE CHOCOLATE","Etiquetas"],["107408","ETIQUETA GALLETA AMERICAN CRISPY CARAMELO SALADO","Etiquetas"],["107409","ETIQUETA GALLETA AMERICAN CRISPY ALMENDRAS Y CRAMBERRY","Etiquetas"],["107410","ETIQUETA GALLETA AMERICAN CRISPY BROWNIE CHIPS","Etiquetas"],["107411","ETIQUETA GALLETA AMERICAN COCADA CRANBERRY","Etiquetas"],["107412","ETIQUETA GALLETA AMERICAN CHUNK CHOCOLATE","Etiquetas"],["107413","ETIQUETA GALLETA AMERICAN CHUNK MACADAMIA Y CHOCOLATE BLANCO","Etiquetas"],["107414","ETIQUETA GALLETA AMERICAN CHUNK CHOCOLATE Y CARAMELO","Etiquetas"],["107418","ETIQUETA GENERICA TORTA SELVA NEGRA ESPECIAL WALMART","Etiquetas"],["107419","ETIQUETA GENERICA TORTA CREMA PIÑA ESPECIAL WALMART","Etiquetas"],["393421","ETIQUETA CIRCULAR 9cm TORTA CHOCOLATE REAL","Etiquetas"],["393422","ETIQUETA CIRCULAR 9cm TORTA CALUGA","Etiquetas"],["393423","ETIQUETA CIRCULAR 9cm TORTA PANQUEQUE CHOCOLATE GUINDA","Etiquetas"],["393424","ETIQUETA CIRCULAR 9cm TORTA PIÑA VEGANA","Etiquetas"],["393425","ETIQUETA CIRCULAR 9cm TORTA SELVA NEGRA VEGANA","Etiquetas"],["393426","ETIQUETA CIRCULAR 9cm TORTA DOÑA ISABEL","Etiquetas"],["404718","ETIQUETA BLANCA 100x80 SISA","Etiquetas"],["404719","ETIQUETA BLANCA 100x120 SISA","Etiquetas"],["404720","ETIQUETA BLANCA 100x50","Etiquetas"],["404722","ETIQUETA BLANCA 30X40","Etiquetas"],["404731","ETIQUETA  4,2X6cm IMPR.PASTEL 5 COLOR + BARNIZ UV","Etiquetas"],["404733","ETIQUETA CIRCULAR 9,8cm IMPR. KUCHEN  5 COL +UV","Etiquetas"],["404735","ETIQUETA CIRCULAR 9,8cm IMPR. TARTA  5 COL +UV","Etiquetas"],["404736","ETIQUETA CIRCULAR 9,8cm IMPR. PIE  5 COL +UV","Etiquetas"],["404737","ETIQUETA CIRCULAR 9cm IMPR. T.CREMA PIÑA 5 COL +UV","Etiquetas"],["404738","ETIQUETA CIRCULAR 9cm IMPR. TORTA SELVA NEGRA","Etiquetas"],["404739","ETIQUETA CIRCULAR 9cm IMPR. TORTA CREMA MANJAR","Etiquetas"],["404744","ETIQUETA CIRCULAR 9cm IMPR. TORTA TRS LECHES","Etiquetas"],["404745","ETIQUETA CIRCULAR 9cm IMPR. TORTA YOGURT FRUTILLA","Etiquetas"],["404748","ETIQUETA BLANCA 40x200 SISA","Etiquetas"],["404749","ETIQUETA BLANCA 100x80 JUMBO","Etiquetas"],["404755","ETIQUETA KUCHEN MANZANA WALMART","Etiquetas"],["404756","ETIQUETA KUCHEN 4 SABORES WALMART","Etiquetas"],["404757","ETIQUETA KUCHEN FRAMBUESA WALMART","Etiquetas"],["405031","ETIQUETAS CIRCULAR 9cm IMPR. TORTA VIENA SISA","Etiquetas"],["405034","ETIQUETAS CIRCULAR 9cm IMPR. TORTA HOJA MANJAR","Etiquetas"],["405036","ETIQUETAS CIRCULAR 9cm IMPR. PANQUEQUE NARANJA","Etiquetas"],["405049","ETIQUETA AUTOADHESIVA 22X32 POLIPROPILENO (OPP)","Etiquetas"],["405050","ETIQUETAS 75X130 IMPRESAS CUATRICOMIA MAS UV (MAXIMA)","Etiquetas"],["405089","ETIQUETA TORTA MERENGUE FRAMBUESA CONGELADA","Etiquetas"],["405090","ETIQUETA TORTA MERENGUE LUCUMA CONGELADA","Etiquetas"],["405103","ETIQUETA BLANCA 200X50 SISA OPP","Etiquetas"],["405108","ETIQUETA TORTA  MOCACCINO","Etiquetas"],["405111","ETIQUETA CIRCULAR TORTA AMOR","Etiquetas"],["405119","ETIQUETAS CIRCULAR 9cm IMPR. TORTA PIÑA JUMBO","Etiquetas"],["405120","ETIQUETAS CIRCULAR 9cm  TORTA SELVA NEGRA JUMBO","Etiquetas"],["405121","ETIQUETAS CIRCULAR 9cm IMPR.TORTA TRES LECHES JUMB0","Etiquetas"],["405122","ETIQUETAS CIRCULAR 9cm IMPR. TORTA LUCUMA JUMBO","Etiquetas"],["405123","ETIQUETAS CIRCULAR 9cm IMPR. TORTA VIENA JUMBO","Etiquetas"],["405124","ETIQUETAS CIRCULAR 9cm IMPR. TORTA BEATRIZ JUMBO","Etiquetas"],["405126","ETIQUETAS CIRCULAR 9cm IMPR. TORTA BOM BOM","Etiquetas"],["405127","ETIQ.CIRCULAR 9cm TORTA PANQUEQUE NARANJA JUMBO","Etiquetas"],["405128","ETIQUETA CIRCULAR 9cm TORTA HOJA MANJAR JUMBO","Etiquetas"],["405129","ETIQ.CIRCULAR 9cm IMPR. TORTA HOJA PASTELERA JUMBO","Etiquetas"],["405130","ETIQUETAS CIRCULAR 9cm IMPR. TORTA TRUFFA JUMBO","Etiquetas"],["405131","ETIQUETAS CIRCULAR 9cm IMPR. TORTA 4 LECHES JUMBO","Etiquetas"],["405159","ETIQUETA BLANCA 120X100 OPP","Etiquetas"],["405160","ETIQUETA 200X50 POLIPROPILENO IMPR. QUINTA","Etiquetas"],["405168","ETIQUETAS 22X32 BLANCA ADHESIVO ULTRA FRÍO","Etiquetas"],["405172","ETIQUETA GENERICA TORTA CHOCOLATE 8 PP","Etiquetas"],["405174","ETIQUETA GENERICA TORTA CHOCOLATE MANJAR","Etiquetas"],["405176","ETIQUETA GENERICA TORTA CHOCOQUINDA","Etiquetas"],["405178","ETIQUETA GENERICA TORTA CREMA MARACUYA","Etiquetas"],["405180","ETIQUETA GENERICA TORTA CREMA MOKA","Etiquetas"],["405182","ETIQUETA GENERICA TORTA CREMA PIÑA","Etiquetas"],["405186","ETIQUETA GENERICA TORTA HOLANDESA","Etiquetas"],["405187","ETIQUETA GENERICA TORTA MOUSSE MANJAR","Etiquetas"],["405189","ETIQUETA GENERICA TORTA SELVA NEGRA","Etiquetas"],["405191","ETIQUETA GENERICA TORTA TRES LECHES","Etiquetas"],["405193","ETIQUETA GENERICA TORTA SAN JORGE","Etiquetas"],["405198","ETIQUETA CONSUMO IMPRESO COLOR CAFÉ","Etiquetas"],["405199","ETIQUETA CONSUMO IMPRESO COLOR MOSTAZA","Etiquetas"],["405205","ETIQ.CIRCULAR 9cm IMPR. TORTA SAN JORGE LÚCUMA ARTESANAL JUMBO","Etiquetas"],["405206","ETIQ.CIRCULAR 9cm IMPR. TORTA SAN JORGE GUINDA ARTESANAL JUMBO","Etiquetas"],["405207","ETIQ.CIRCULAR 9cm IMPR. TORTA SAN JORGE CHOCOLATE ARTESANAL JUMBO","Etiquetas"],["405216","ETIQUETA GENERICA TORTA PANQUEQUE NARANJA","Etiquetas"],["405300","ETIQ. CIRCULAR 9cm IMPR. PIE DE LIMÓN ESPECIAL JUMBO","Etiquetas"],["405301","ETIQ. CIRCULAR 9cm IMPR. PIE DE FRAMBUESA ESPECIAL JUMBO","Etiquetas"],["405302","ETIQ. CIRCULAR 9cm IMPR. PIE DE MARACUYÁ ESPECIAL JUMBO","Etiquetas"],["405310","ETIQUETA OPP TRANSPARENTE 22X32 CRISME","Etiquetas"],["405312","ETIQUETA GENERICA TORTA FRUTOS DEL BOSQUE","Etiquetas"],["405352","ETIQ. CIRCULAR 90cm IMPR. TORTA CUSINE & CO SISA CONFETTI","Etiquetas"],["405353","ETIQ. CIRCULAR 90cm IMPR. TORTA CUSINE & CO JUMBO COOKIES AND CREAM","Etiquetas"],["405354","ETIQ. CIRCULAR 90cm IMPR. JUMBO KUCHEN DE DURAZNO","Etiquetas"],["405355","ETIQ. CIRCULAR 90cm IMPR. JUMBO KUCHEN DE FRUTILLA","Etiquetas"],["405356","ETIQ. CIRCULAR 90cm IMPR. JUMBO KUCHEN DE MANZANA TRENZADO","Etiquetas"],["405357","ETIQ. CIRCULAR 90cm IMPR. JUMBO KUCHEN DE STROISSEL MANZANA","Etiquetas"],["405358","ETIQ. CIRCULAR 90cm IMPR. JUMBO TARTA FRUTA MIXTA SURTIDA","Etiquetas"],["405359","ETIQ. CIRCULAR 90cm IMPR. TORTA CUSINE & CO SISA TORTA CARAMEL","Etiquetas"],["405360","ETIQ. CIRCULAR 90cm IMPR. JUMBO KUCHEN DE FRAMBUESA","Etiquetas"],["405376","ETIQUETA CIRCULAR 9cm TORTA SACHER","Etiquetas"],["405377","ETIQUETA CIRCULAR 9cm TORTA MANJAR LUCUMA","Etiquetas"],["405378","ETIQUETA CIRCULAR 9cm TORTA GUINDA CHOCOLATE","Etiquetas"],["405402","ETIQUETA GENERICA TORTA CHOCOLATE AVELLANA","Etiquetas"],["405461","ETIQUETA CIRCULAR 4cm IMPR. PASTEL SISA","Etiquetas"],["405479","ETIQUETA BLANCA 180X50 PAPEL SEMIBRILLO CRISME","Etiquetas"],["405492","ETIQUETA GENERICA TORTA MIL HOJAS MANJAR ESPECIAL WALMART","Etiquetas"],["405493","ETIQUETA DECORATIVA PASTEL MIL HOJAS PASTELERA JUMBO","Etiquetas"],["405494","ETIQUETA DECORATIVA PASTEL PIÑA JUMBO","Etiquetas"],["405495","ETIQUETA DECORATIVA PASTEL TRES LECHES JUMBO","Etiquetas"],["405496","ETIQUETA DECORATIVA PANQUEQUE NARANJA JUMBO","Etiquetas"],["405497","ETIQUETA DECORATIVA PASTEL SELVA NEGRA JUMBO","Etiquetas"],["405498","ETIQUETA DECORATIVA PASTEL TRUFA JUMBO","Etiquetas"],["405571","ETIQUETA GENÉRICA TORTA CREMA PIÑA MEDIANA WALMART","Etiquetas"],["405572","ETIQUETA GENÉRICA TORTA SELVA NEGRA MEDIANA WALMART","Etiquetas"],["405671","ETIQUETA TORTA SAN JORGE LÚCUMA SMU","Etiquetas"],["405704","ETIQ. CIRCULAR 90cm IMPR. JUMBO KUCHEN DE MANZANA","Etiquetas"],["405709","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA PIÑA WALMART","Etiquetas"],["405710","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA AMOR WALMART","Etiquetas"],["405711","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA HOJA MANJAR MERENGUE WALMART","Etiquetas"],["405712","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA MIL HOJAS MANJAR ARTESANAL WALMART","Etiquetas"],["405713","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA PANQUEQUE NARANJA WALMART","Etiquetas"],["405714","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA TRES LECHES WALMART","Etiquetas"],["405716","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA SELVA NEGRA TRADICIONAL WALMART","Etiquetas"],["405717","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA SELVA NEGRA WALMART","Etiquetas"],["405718","ETIQ. CIRCULAR 90cm IMPR. OPP KUCHEN FRAMBUESA TRADICIONAL WALMART","Etiquetas"],["405719","ETIQ. CIRCULAR 80cm IMPR. OPP TORTA FRUTOS DEL BOSQUE WALMART","Etiquetas"],["405720","ETIQ. CIRCULAR 80cm IMPR. OPP TORTA CHOCOLATE WALMART","Etiquetas"],["405721","ETIQUETA COLOR CREMA 245X40 OPP","Etiquetas"],["405722","ETIQUETA CONSUMO","Etiquetas"],["405733","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA PIÑA MARKETSIDE","Etiquetas"],["405734","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA SELVA NEGRA MARKETSIDE","Etiquetas"],["405735","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA VIENA MARKETSIDE","Etiquetas"],["405736","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA AMOR MARKETSIDE","Etiquetas"],["405737","ETIQ. CIRCULAR 90cm IMPR. OPP TORTA SAN JORGE MARKETSIDE","Etiquetas"],["405738","ETIQUETA CONSUMO MARKETSIDE","Etiquetas"],["405771","ETIQUETA 300X57 TORTA HOJA MERENGUE SMU","Etiquetas"],["405772","ETIQUETA 300X57 TORTA SAN JORGE SMU","Etiquetas"],["405773","ETIQ. CIRCULAR 80cm IMPR. OPP TORTA SAN JORGE SMU","Etiquetas"],["405808","ETIQUETA IMPRESA 150X35 TRES COLORES + U.V OPP POSTRE SABOR TRES LECHES CON FRAMBUESA","Etiquetas"],["405809","ETIQUETA IMPRESA 150X35 TRES COLORES + U.V OPP POSTRE SABOR CHOCOLATE Y FRUTOS DEL BOSQUE","Etiquetas"],["405810","ETIQUETA IMPRESA 150X35 TRES COLORES + U.V OPP POSTRE SABOR LÚCUMA MANJAR","Etiquetas"],["405817","ETIQ. CIRCULAR 90cm IMPR. SANTA PASTELERÍA","Etiquetas"],["405832","ETIQ. CIRCULAR 80cm IMPR. OPP TORTA CREMA MANJAR WALMART","Etiquetas"],["405833","ETIQ. CIRCULAR 80cm IMPR. OPP TORTA CHOCOLATE FRUTILLA WALMART","Etiquetas"],["405836","ETIQUETA IMPRESA 300X50 CUATRICOMIA + U.V OPP TORTA AMBROSITO","Etiquetas"],["405837","ETIQUETA IMPRESA 70X80 CONSUMO TORTA AMBROSITO OPP","Etiquetas"],["401010","STRECH FILM BLANCO","Film"],["401011","STRECH FILM NEGRO","Film"],["401012","STRECH FILM VERDE","Film"],["401013","STRECH FILM AZUL","Film"],["401014","STRECH FILM ANARANJADO","Film"],["401015","STRECH FILM AMARILLO","Film"],["401019","STRECH FILM ROJO","Film"],["402111","FILM TRANSPARENTE  685 MM (23CM) BATTISTA","Film"],["405335","STRECH FILM REMINISEN","Film"],["107277","PULPA MARACUYÁ CON PEPAS ALTA FRUTA","Fruta Congelada"],["107306","FRAMBUESA CONGELADA FRUTOS DEL MAIPO","Fruta Congelada"],["107317","CRUMBLE FRAMBUESA CONGELADA ALTA FRUTA","Fruta Congelada"],["107354","FRUTILLA CONGELADA ALTA FRUTA","Fruta Congelada"],["107368","FRAMBUESA MITAD CONGELADA MEL","Fruta Congelada"],["402131","FRAMBUESA CONGELADA MINUTO VERDE","Fruta Congelada"],["402132","FRAMBUESA CONGELADA ALTA FRUTA","Fruta Congelada"],["405285","FRUTILLA PICADILLO CONGELADA ALTA FRUTA","Fruta Congelada"],["107000","CEREZAS AL JUGO DESCAROZADAS FRUCOL","Fruta Conserva"],["107001","MARRASQUINO ALTO LA CRUZ","Fruta Conserva"],["107102","TRUFA CHOCOLATE PURATOS","Fruta Conserva"],["107117","PIÑA EN RODAJAS ALTO LA CRUZ","Fruta Conserva"],["107123","PIÑA EN CUBOS ALTO LA CRUZ","Fruta Conserva"],["107124","DURAZNO EN MITADES ALTO LA CRUZ","Fruta Conserva"],["107125","DURAZNO EN CUBOS ALTO LA CRUZ","Fruta Conserva"],["107144","MANZANAS SLICE MEL","Fruta Conserva"],["107183","FRUIT FILLING MANZANA FRUCOL","Fruta Conserva"],["107240","CRUSHED DE FRAMBUESA ALTO LA CRUZ","Fruta Conserva"],["107282","PIÑA EN CUBOS","Fruta Conserva"],["107312","CEREZAS AL JUGO CAMPOS","Fruta Conserva"],["107313","DURAZNO EN CUBOS CAMPOS","Fruta Conserva"],["107314","MARRASQUINO CAMPOS","Fruta Conserva"],["107319","FILLING DE GUINDA BALDE 4,5 Kg","Fruta Conserva"],["107324","MARRASQUINO FRUCOL","Fruta Conserva"],["107346","PIÑA EN CUBOS LAS PERDICES","Fruta Conserva"],["107348","PIÑA EN RODAJA LAS PERDICES","Fruta Conserva"],["107401","DURAZNO EN SLICE LAS PERDICES","Fruta Conserva"],["405500","PIÑA EN CUBOS CAMPOS","Fruta Conserva"],["405574","PIÑA EN RODAJAS CAMPOS","Fruta Conserva"],["107335","GALLETA VINO NESTLE","Galleta"],["107336","GALLETA VINO CAROZZI","Galleta"],["107343","OREO SMALL CRUMBS 500 GRS","Galleta"],["405333","GALLETA OREO REGULAR BEZANILLA","Galleta"],["405334","OREO MEDIUM CRUMBS (TROZOS) BEZANILLA","Galleta"],["405506","GALLETA OREO REGULAR ALCA","Galleta"],["405507","OREO MEDIUM CRUMBS (TROZOS) BEZANILLA","Galleta"],["107159","GELATINA S/SABOR ALTO LA CRUZ","Gelatina"],["107160","GELATINA FRAMBUESA ALTO LA CRUZ","Gelatina"],["105001","HUEVO LIQUIDO LAS RASTRAS","Huevo"],["105002","HUEVO LIQUIDO TOTEM ARIZONA","Huevo"],["107226","HUEVO LIQUIDO BALDE ARIZONA","Huevo"],["107287","HUEVO LIQUIDO TOTE LAS RASTRAS","Huevo"],["201005","HUEVO LIQUIDO AGRICOVIAL","Huevo"],["405246","HUEVO EN POLVO OVOSUR","Huevo"],["405685","HUEVO LIQUIDO BOLSA 20 KG AGRICOVIAL","Huevo"],["107112","MERENGUE PURATOS","Insumo"],["107210","DISCO MERENGUE PAVESI","Insumo"],["107211","MERENGUITOS PAVESI","Insumo"],["107289","HOJARASCA 16CM OBERENA","Insumo"],["107310","VINAGRE BLANCO EGC","Insumo"],["107321","MERENGUE CONGELABLE PURATOS","Insumo"],["107403","VINAGRE VINO BLANCO","Insumo"],["107405","HOJARASCA 25p. PAVESI","Insumo"],["300003","GRANA CHOCOLATE","Insumo"],["300004","GRANA BLANCA","Insumo"],["353001","INSUMO SEMI-ELABORADO INTERPLANTA BIZCOCHO VAINILLA 19cm","Insumo"],["353002","INSUMO SEMI-ELABORADO INTERPLANTA BIZCOCHO CHOCOLATE 19cm","Insumo"],["353003","Porción vainilla  Semi-Elab UND","Insumo"],["353009","DISCO PANQUEQUE VAINILLA SEMI-ELAB UND","Insumo"],["362029","PLANCHA DE HOJA  42X36X1 cm (1x12)","Insumo"],["362073","DISCO DE HOJA 15 PP 1X30","Insumo"],["362099","GRANA DE HOJA","Insumo"],["362105","HOJARASCA 19 CMS. PAVESI","Insumo"],["362106","HOJARASCA OBERENA","Insumo"],["393040","SUB DISCO HOJA 15 PP","Insumo"],["393215","INSUMO INTERPLANTA BIZCOCHO BLANCO 17 CM","Insumo"],["393216","INSUMO INTERPLANTA BIZCOCHO CHOCOLATE 17 CMS","Insumo"],["393222","PLANCHA PANQUEQUE VAINILLA TERCEROS PAVESI","Insumo"],["393253","SUB DISCO HOJA 17 CM","Insumo"],["393349","Tartaleta mediana semi-elab","Insumo"],["393384","INSUMO SEMI-ELABORADO BIZCOCHO VEGANO","Insumo"],["393415","INSUMO SEMIELABORADO GALLETA DE VINO  MOLIDA","Insumo"],["393419","INSUMO SEMI ELABORADO BROWNIE VEGANO INTERPLANTA","Insumo"],["393427","TARTALETA FAMILIAR RECETA TRADICIONAL","Insumo"],["393437","INSUMO INTERPLANTA BIZCOCHO CONFETI 17 CM","Insumo"],["403268","INSUMO DISCO PANQUEQUE CHOCOLATE 18 CM.","Insumo"],["404316","BASE DE TARTALETA SOFT BLANCA PAVESI","Insumo"],["405344","DISCO DE PANQUEQUE VAINILLA 18 CM ENCOMIENDA TOTTUS","Insumo"],["405345","DISCO PANQUEQUE CHOCOLATE 18 CM ENCOMIENDA TOTTUS","Insumo"],["405645","BIZCOCHO # 20 BLANCO C/AMAPOLAS PAVESI","Insumo"],["405658","SUB DISCO PANQUEQUE VAINILLA 16 CM","Insumo"],["405788","DISCO HOJARASCA 19 CM SEMIELAB. UND","Insumo"],["430440","PLANCHA PANQUEQUE VAINILLA OBERENA","Insumo"],["107404","JUGO EN POLVO SABOR FRUTILLA","Jugo"],["405320","JUGO DE LIMÓN CONGELADO WATT","Jugo"],["405330","JUGO EN POLVO FRUTILLA","Jugo"],["405331","JUGO EN POLVO DURAZNO","Jugo"],["405446","JUGO POLVO DURAZNO","Jugo"],["405465","JUGO POLVO FRUTILLA","Jugo"],["405593","JUGO EN POLVO ZUKO DURAZNO","Jugo"],["107215","LECHE CONDENSADA NESTLE","Leche condensada"],["107333","LECHE CONDENSADA UNTABLE NESTLE","Leche condensada"],["405370","LECHE CONDENSADA MONACO","Leche condensada"],["405382","LECHE CONDENSADA EGC","Leche condensada"],["405539","LECHE CONDENSADA WATTS","Leche condensada"],["107176","RON TILICURA","Licor"],["107239","COGÑAC TILICURA","Licor"],["170174","RON DORADO","Licor"],["405398","RON DORADO CABO VIEJO 750CC","Licor"],["107109","MANJAR ARTESANAL DIWATTS","Manjar"],["107147","MANJAR GRADO 3 LANGER","Manjar"],["107247","DULCE DE LECHE MASTER MARTINI","Manjar"],["107400","MANJAR ARTESANAL DAILY","Manjar"],["103006","MARGARINA HORNITO DIWATTS","Margarina"],["103007","MARGARINA HORNITO CERRILLOS","Margarina"],["107331","MANTEQUILLA WATTS","Margarina"],["405499","MANTEQUILLA CON SAL SOPROLE","Margarina"],["405638","MANTEQUILLA SIN SAL WATT","Margarina"],["405700","MARGARINA MULTIPROPÓSITO HORNEO","Margarina"],["405745","MANTEQUILLA SIN SAL ALCA","Margarina"],["107095","PURE DE LUCUMA (ET. VERDE) BALDE 4,5 Kg","Mermelada"],["107113","MERM. MEL GUINDA ÁCIDA QUINTA BALDE 5 Kg","Mermelada"],["107120","BRILLO FRIO RTU PURATOS","Mermelada"],["107129","MERM. MEL FRAMBUESA QUINTA BALDE 5 Kg","Mermelada"],["107130","MERMELADA FRUTILLA GRADO 1 MEL","Mermelada"],["107131","MERM. MEL DAMASCO MOL. BALDE 5 Kg","Mermelada"],["107155","MER. EBEL PIÑA BALDE 5 Kg","Mermelada"],["107156","MERMELADA DE LUCUMA DIWATTS","Mermelada"],["107157","MERM. EBEL GUINDA (ET. VERDE) BL 5 Kg","Mermelada"],["107158","MER. MEL PIÑA BALDE 5 Kg","Mermelada"],["107172","MERM. MEL DURAZNO ENT. BALDE 5 Kg","Mermelada"],["107181","RELLENO PIE DE LIMON SAN CRISTOBAL","Mermelada"],["107193","MERMELADA DE FRAMBUESA EBEL","Mermelada"],["107204","RELLENO PIE MARACUYÁ BALDE 4,5 Kg","Mermelada"],["107263","RELLENO SABOR VAINILLA PURATOS","Mermelada"],["107275","SALSA DE GUINDA BALDE 5 Kg","Mermelada"],["107280","NUEVO BRILLO PARA CONGELADO PURATOS","Mermelada"],["107294","DULCE DE RELLENO DIWATTS","Mermelada"],["107295","PASTA MEL DE MARACUYÁ BALDE 5 KG","Mermelada"],["107320","COLDFIL PIE DE LIMÓN","Mermelada"],["107358","MERMELADA FRUTOS DEL BOSQUE MEL","Mermelada"],["107359","MERMELADA CIRUELA MEL","Mermelada"],["107360","RELLENO PIE DE FRAMBUESA","Mermelada"],["170173","MERM. EBEL GRANDES CONSUMIDORES FRUTILLA BALDE 5 Kg","Mermelada"],["170175","MERMELADA DURAZNO PURATOS","Mermelada"],["403391","MERM. EBEL PIÑA QUINTA BALDE 5 Kg","Mermelada"],["403407","MERM. LAMARKA FRAMBUESA BALDE 5 Kg","Mermelada"],["403408","MERM. LAMARKA DAMASCO BALDE 5 Kg","Mermelada"],["405318","MERM. EBEL FRUTOS DEL BOSQUE BALDE 5 KG","Mermelada"],["405379","RELLENO AVELLANA MASTER MARTINI","Mermelada"],["405399","RELLENO AVELLANA CERRILLOS","Mermelada"],["405436","PURE DE MANZANA BALDE 4,5 Kg MEL","Mermelada"],["405491","FILLING DE MANZANA MEL","Mermelada"],["405524","CREMFIL DULCE DE LECHE PURATOS","Mermelada"],["405558","RELLENO CREMA VAINILLA BAKELS","Mermelada"],["405612","SATIN PURATOS","Mermelada"],["100105","MIX BIZC. RED VELVET PURATOS","Mix"],["100106","MIX BROWNIE PURATOS","Mix"],["100200","MIX TARTALETA SAN CRISTOBAL","Mix"],["100206","HARINA 061 FINA HOJA SAN CRISTOBAL","Mix"],["100207","MIX BIZCOCHO BLANCO SAN CRISTOBAL","Mix"],["100221","MIX BIZCOCHO CHOCOLATE SAN CRISTOBAL","Mix"],["100236","PREMEZCLA BIZCOCHO ROJO HI SAN CRISTOBAL","Mix"],["102237","PREMEZCLA BIZCOCHO ANARANJADO HI SAN CRISTOBAL","Mix"],["102238","PREMEZCLA BIZCOCHO VERDE HI SAN CRISTOBAL","Mix"],["102239","PREMEZCLA BIZCOCHO MORADO HI SAN CRISTOBAL","Mix"],["107301","TEGRAL BROWNIE VEGGI PURATOS","Mix"],["107311","HARINA ORO 2","Mix"],["107330","HARINA NUEZ TRES ERRE","Mix"],["107416","MIX QUEQUE SATÍN SAN CRISTÓBAL","Mix"],["170177","TEGRAL MUFFINS VEGANO PURATOS","Mix"],["170178","TEGRAL BIZCOCHUELO PURATOS","Mix"],["402124","MIX TARTALETA PURATOS","Mix"],["402128","MIX BIZCOCHO SIN AZUCAR PURATOS","Mix"],["403330","MIX BIZCOCHO BLANCO PURATOS","Mix"],["403331","MIX BIZCOCHO CHOCOLATE PURATOS","Mix"],["405528","MIX QUEQUE AMERICANO SAN CRISTOBAL","Mix"],["405562","MIX  BIZCOCHO 3 LECHES PURATOS","Mix"],["405563","BIZCOCHO CHOCOLATE HI MARMIX","Mix"],["405564","PM BASE TARTALETAS MARMIX","Mix"],["405573","T. BIZCOCHO CHOCOLATE PLUS PURATOS","Mix"],["405811","PREMEZCLA BIZCOCHO ZANAHORIA ASITEC","Mix"],["102103","PROPIONATO DE SODIO WINKLER","Propionato"],["403269","PROPIONATO DE CALCIO 14 KG WINKLER","Propionato"],["100302","JARABE REMOJO SISA DIWATTS","Remojo"],["100303","JARABE DE REMOJO 35° TOTEM 1000 Lt","Remojo"],["107259","JARABE 3 LECHES SCHOLLE 10LT DIWATTS","Remojo"],["107260","JARABE DE REMOJO OCTOBINS","Remojo"],["107262","REMOJO 3 LECHES RICHI","Remojo"],["107278","JARABE DE REMOJO RON-NJA 40 BIDÓN 5 Lt","Remojo"],["201103","PROTEKTOR PURATOS","Remojo"],["501147","JARABE DE REMOJO 35° BIDON","Remojo"],["104010","SAL FINA","Sal"],["106101","VINAGRE WINKLER","Vinagre"],["107164","YOGURT FRUTILLA DIWATTS","Yogurt"],["107174","YOGURT FRUTILLA SOPROLE","Yogurt"]];
+
+// ── Catálogo activo: el cargado por el usuario manda sobre el de fábrica ──
+var SKU_MAP = {};
+function skuCargado(){
+  try { var j = JSON.parse(localStorage.getItem('bq_sku') || 'null');
+        return (j && j.length) ? j : null; } catch(e){ return null; }
+}
+function skuLista(){ return skuCargado() || SKU_BASE; }
+function skuIndexar(){
+  SKU_MAP = {};
+  skuLista().forEach(function(r){ SKU_MAP[String(r[0]).toUpperCase().trim()] = { desc:r[1], cat:r[2] }; });
+  return SKU_MAP;
+}
+// Devuelve {desc, cat} o null si ese código no está en el catálogo
+function skuBuscar(codigo){
+  if(!codigo) return null;
+  return SKU_MAP[String(codigo).toUpperCase().trim()] || null;
+}
+skuIndexar();
+
 var STORE_KEY  = 'bodega_quinta_v2';
 var DIAS_ALERTA = 30;
 
@@ -700,7 +728,7 @@ function showTip(e,ubic){
     t.innerHTML = '<h5>'+ubic+'</h5>'
       +'<p style="font-size:9px;color:'+ZCOLOR[p.zona]+'">'+ZLABEL[p.zona]+'</p>'
       +'<p>SKU: <span>'+esc(i.sku)+'</span></p>'
-      +'<p>Desc: <span>'+esc(String(i.descripcion).substring(0,32))+'</span></p>'
+      +'<p>Desc: <span>'+esc(String(nombreDe(i.sku,i.descripcion)).substring(0,32))+'</span></p>'
       +'<p>Cantidad: <span>'+total+'</span></p>'
       +'<p>Lote: <span>'+esc(i.lote||'—')+'</span></p>'
       +'<p>Elab: <span>'+(fmtDate(i.fecha_elab)||'—')+'</span></p>'
@@ -766,7 +794,7 @@ function showResult(ubic){
         }).join('');
   } else {
     cuerpo = '<div class="rrow"><span class="lbl">SKU</span><span class="val">'+esc(i.sku||'—')+'</span></div>'
-      +'<div class="rrow"><span class="lbl">Descripción</span><span class="val">'+esc(i.descripcion||'—')+'</span></div>'
+      +'<div class="rrow"><span class="lbl">Descripción</span><span class="val">'+esc(nombreDe(i.sku,i.descripcion)||'—')+'</span></div>'
       +'<div class="rrow"><span class="lbl">Cantidad</span><span class="val">'+total+'</span></div>'
       +'<div class="rrow"><span class="lbl">Lote</span><span class="val">'+esc(i.lote||'—')+'</span></div>'
       +'<div class="rrow"><span class="lbl">F. Elaboración</span><span class="val">'+(fmtDate(i.fecha_elab)||'—')+'</span></div>'
@@ -841,7 +869,7 @@ function renderModal(){
       html += '<div class="rec-box" style="border-left-color:'+
         (vencState(i.fecha_venc)==='venc'?'var(--red)':vencState(i.fecha_venc)==='pronto'?'var(--orange)':'var(--gold)')+'">'
         +'<div class="rec-head">'
-          +'<div class="t">'+esc(i.sku)+' — '+esc(i.descripcion||'sin descripción')+'</div>'
+          +'<div class="t">'+esc(i.sku)+' — '+esc(nombreDe(i.sku,i.descripcion)||'sin descripción')+'</div>'
           +'<div class="rec-act">'
             +'<button class="mini print" onclick="downloadLabels([\''+esc(i.id)+'\'])">⬇ Etiqueta PDF</button>'
             +'<button class="mini" onclick="startEdit(\''+esc(i.id)+'\')">✎ Editar</button>'
@@ -876,8 +904,10 @@ function renderModal(){
   html += '<div class="sec-title">'+(e ? '✎ Editando registro' : '＋ Nuevo registro en esta posición')+'</div>';
   html += '<div class="form-grid">'
     +fld('Ubicación','f-ubic','text', e ? normU(e.ubicacion) : editUbic,'ZONA-FILA-COL-NIVEL-PROF')
-    +fld('SKU','f-sku','text', e?e.sku:'','Ej: MP-001')
-    +'<div class="fld full"><label>Descripción</label><input id="f-desc" type="text" value="'+esc(e?e.descripcion:'')+'" placeholder="Descripción del producto"></div>'
+    +fld('SKU','f-sku','text', e?e.sku:'','Ej: 104006')
+    +'<div class="fld full" style="margin-top:-4px"><div id="f-sku-av" style="font-size:10.5px;min-height:14px"></div></div>'
+    +'<div class="fld full"><label>Descripción <span style="color:var(--muted);text-transform:none;letter-spacing:0">— se completa sola desde el maestro de SKU</span></label>'
+    +'<input id="f-desc" type="text" value="'+esc(e?e.descripcion:'')+'" placeholder="Descripción del producto"></div>'
     +fld('Fecha elaboración','f-elab','date', e?e.fecha_elab:'','')
     +fld('Fecha vencimiento','f-venc','date', e?e.fecha_venc:'','')
     +fld('Cantidad','f-cant','number', e?e.cantidad:'','0')
@@ -986,7 +1016,10 @@ function saveForm(alsoPrint){
     savedId = editingId;
     for(var k=0; k<inventory.length; k++){
       if(sameId(inventory[k].id, editingId)){
+        var antes = +inventory[k].cantidad || 0;
         Object.keys(data).forEach(function(kk){ inventory[k][kk] = data[kk]; });
+        logManual('EDICION', data, cant - antes, cant,
+                  antes !== cant ? 'corrección manual: antes '+antes : 'corrección de datos');
         break;
       }
     }
@@ -996,6 +1029,7 @@ function saveForm(alsoPrint){
     data.id = seq++;
     savedId = data.id;
     inventory.push(data);
+    logManual('INGRESO', data, cant, cant, 'alta manual desde el dashboard');
     toast('Registro agregado en '+ubic);
   }
 
@@ -1043,6 +1077,7 @@ function delRecord(id){
     });
     return;
   }
+  logManual('SALIDA', it, -(+it.cantidad||0), 0, 'eliminado manualmente desde el dashboard');
   inventory = inventory.filter(function(x){ return !sameId(x.id, id); });
   if(sameId(editingId, id)) editingId = null;
   persist(); buildWarehouse(); renderList(); updateKPIs(); showResult(editUbic); renderModal();
@@ -1193,7 +1228,7 @@ function labelPage(i){
 
   var BH = [140, 76, 140, 76, HT-432];      // alto de cada banda
   var bands = [
-    {t:'big', k:'PRODUCTO',    v:i.descripcion || i.sku || ''},
+    {t:'big', k:'PRODUCTO',    v:nombreDe(i.sku,i.descripcion) || i.sku || ''},
     {t:'row', cells:[['LOTE', i.lote||'—'], ['CANTIDAD', String(i.cantidad||0)],
                      ['SKU', i.sku||'—'],   ['UBICACION', normU(i.ubicacion)]]},
     {t:'big', k:'VENCIMIENTO', v:fmtDate(i.fecha_venc) || 'SIN FECHA'},
@@ -1321,7 +1356,7 @@ function openPrintMenu(){
       return normU(i.ubicacion).indexOf(q) >= 0
         || String(i.sku).toUpperCase().indexOf(q) >= 0
         || String(i.lote||'').toUpperCase().indexOf(q) >= 0
-        || String(i.descripcion).toUpperCase().indexOf(q) >= 0;
+        || String(nombreDe(i.sku,i.descripcion)).toUpperCase().indexOf(q) >= 0;
     }) : [];
 
   function opt(list,titulo,detalle,nombre){
@@ -1368,7 +1403,7 @@ function doSearch(val){
     return normU(i.ubicacion).indexOf(val) >= 0
       || String(i.sku).toUpperCase().indexOf(val) >= 0
       || String(i.lote||'').toUpperCase().indexOf(val) >= 0
-      || String(i.descripcion).toUpperCase().indexOf(val) >= 0;
+      || String(nombreDe(i.sku,i.descripcion)).toUpperCase().indexOf(val) >= 0;
   });
   if(found.length){
     selectUbic(found[0].ubicacion);
@@ -1483,6 +1518,8 @@ function restore(){
 function clearAll(){
   if(!inventory.length){ toast('No hay datos que borrar'); return; }
   if(!confirm('¿Borrar los '+inventory.length+' registros guardados? Esta acción no se puede deshacer.')) return;
+  HIST.add({ tipo:'VACIADO', origen:'oficina', usuario:'oficina',
+             nota:'se vació la base de '+inventory.length+' registros (la bitácora se conserva)' });
   inventory = []; activeUbic = null; seq = 1;
   try{ localStorage.removeItem(STORE_KEY); }catch(e){}
   buildWarehouse(); renderList(); updateKPIs();
@@ -1578,6 +1615,8 @@ function processFile(file){
       }
       inventory = result; seq = sq; activeUbic = null;
       persist(); buildWarehouse(); renderList(); updateKPIs();
+      HIST.add({ tipo:'CARGA_EXCEL', origen:'oficina', usuario:'oficina',
+                 nota:'se cargó '+file.name+' con '+result.length+' registros — la base quedó reemplazada' });
       var mix = Object.keys(calcMixtas());
       if(mix.length && reglaEstricta()){
         debug.innerHTML += '<br>⚠ '+mix.length+' posición(es) con más de un SKU: '+mix.slice(0,5).join(', ')+(mix.length>5?'…':'');
@@ -1632,7 +1671,7 @@ function exportExcel(){
   var rows = [HEADERS];
   inventory.slice().sort(function(a,b){ return normU(a.ubicacion) < normU(b.ubicacion) ? -1 : 1; })
     .forEach(function(i){
-      rows.push([normU(i.ubicacion), i.sku, i.descripcion, i.cantidad, i.lote,
+      rows.push([normU(i.ubicacion), i.sku, nombreDe(i.sku,i.descripcion), i.cantidad, i.lote,
         fmtDate(i.fecha_elab), fmtDate(i.fecha_venc), fmtDate(i.fecha_ingreso), i.comentario]);
     });
   var wb = XLSX.utils.book_new();
@@ -1655,15 +1694,135 @@ function setZona(z,btn){
 function setStatus(msg){ document.getElementById('status-msg').textContent = msg; }
 
 // ═══════════════════════════════════════════════════════════════════════
+//  BITÁCORA HISTÓRICA DE MOVIMIENTOS
+//  Registra TODO lo que cambia el stock y no se borra nunca: ni al cargar
+//  un Excel nuevo, ni al vaciar la base. Vive en IndexedDB porque
+//  localStorage se llena a los pocos meses de operación.
+// ═══════════════════════════════════════════════════════════════════════
+var HIST = (function(){
+  var DBN = 'bodega_hist', ST = 'movs', db = null, listo = null;
+  var RESPALDO = 'bodega_hist_fallback';   // si el navegador bloquea IndexedDB
+
+  function abrir(){
+    if (listo) return listo;
+    listo = new Promise(function(res){
+      if (!window.indexedDB) return res(null);
+      var rq;
+      try { rq = indexedDB.open(DBN, 1); } catch(e){ return res(null); }
+      rq.onupgradeneeded = function(e){
+        var d = e.target.result;
+        if (!d.objectStoreNames.contains(ST)){
+          var os = d.createObjectStore(ST, { keyPath:'n', autoIncrement:true });
+          os.createIndex('ts', 'ts');
+        }
+      };
+      rq.onsuccess = function(e){ db = e.target.result; res(db); };
+      rq.onerror   = function(){ res(null); };
+    });
+    return listo;
+  }
+
+  function guardarRespaldo(arr){
+    try { localStorage.setItem(RESPALDO, JSON.stringify(arr.slice(-4000))); }catch(e){}
+  }
+  function leerRespaldo(){
+    try { return JSON.parse(localStorage.getItem(RESPALDO) || '[]'); }catch(e){ return []; }
+  }
+
+  return {
+    // Un movimiento = una línea de la bitácora. delta puede ser negativo.
+    add: function(m){
+      var rec = {
+        ts:      m.ts || new Date().toISOString(),
+        tipo:    m.tipo || 'AJUSTE',
+        origen:  m.origen || 'dashboard',
+        ubicacion: normU(m.ubicacion || ''),
+        sku:     up(m.sku || ''),
+        descripcion: m.descripcion || '',
+        lote:    up(m.lote || ''),
+        delta:   (m.delta === undefined || m.delta === null) ? '' : +m.delta,
+        saldo:   (m.saldo === undefined || m.saldo === null) ? '' : +m.saldo,
+        usuario: m.usuario || 'oficina',
+        nota:    m.nota || ''
+      };
+      abrir().then(function(d){
+        if (!d){ var a = leerRespaldo(); a.push(rec); guardarRespaldo(a); return; }
+        try {
+          var tx = d.transaction(ST, 'readwrite');
+          tx.objectStore(ST).add(rec);
+        } catch(e){ var b = leerRespaldo(); b.push(rec); guardarRespaldo(b); }
+      });
+      return rec;
+    },
+    addMuchos: function(lista){ lista.forEach(HIST.add); },
+    todos: function(){
+      return abrir().then(function(d){
+        if (!d) return leerRespaldo();
+        return new Promise(function(res){
+          var out = [];
+          try {
+            var tx = d.transaction(ST, 'readonly');
+            var cur = tx.objectStore(ST).openCursor();
+            cur.onsuccess = function(e){
+              var c = e.target.result;
+              if (c){ out.push(c.value); c.continue(); } else res(out);
+            };
+            cur.onerror = function(){ res(leerRespaldo()); };
+          } catch(e){ res(leerRespaldo()); }
+        });
+      });
+    },
+    contar: function(){ return HIST.todos().then(function(a){ return a.length; }); }
+  };
+})();
+
+// El nombre bueno: el guardado en el registro, y si no, el del catálogo
+function nombreDe(sku, desc){
+  if(desc && String(desc).trim()) return desc;
+  var c = skuBuscar(sku);
+  return c ? c.desc : '';
+}
+
+// Al escribir el SKU en el formulario se completa la descripción sola
+document.addEventListener('input', function(e){
+  if(!e.target || e.target.id !== 'f-sku') return;
+  var c = skuBuscar(e.target.value);
+  var d = document.getElementById('f-desc');
+  var av = document.getElementById('f-sku-av');
+  if(!d) return;
+  if(c){
+    // solo se rellena si está vacío o si venía de un autocompletado anterior
+    if(!d.value.trim() || d.dataset.auto === '1'){ d.value = c.desc; d.dataset.auto = '1'; }
+    if(av) av.innerHTML = '<span style="color:var(--green)">✓ '+esc(c.desc)+'</span>'
+                        + '<span style="color:var(--muted)"> · '+esc(c.cat)+'</span>';
+  } else {
+    if(d.dataset.auto === '1'){ d.value = ''; d.dataset.auto = ''; }
+    if(av) av.innerHTML = e.target.value.trim()
+      ? '<span style="color:var(--gold)">⚠ Ese código no está en el maestro de SKU</span>' : '';
+  }
+});
+document.addEventListener('input', function(e){
+  if(e.target && e.target.id === 'f-desc') e.target.dataset.auto = '';   // si lo tocan a mano, manda
+});
+
+// Traduce un registro del inventario a una línea de bitácora
+function logManual(tipo, it, delta, saldo, nota){
+  HIST.add({ tipo:tipo, origen:'manual', ubicacion:it.ubicacion, sku:it.sku,
+             descripcion:it.descripcion, lote:it.lote, delta:delta, saldo:saldo,
+             usuario:'oficina', nota:nota || '' });
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  MODO SIN NUBE — intercambio por archivo con los teléfonos
 // ═══════════════════════════════════════════════════════════════════════
 function exportarParaCelulares(){
   if(!inventory.length) return toast('No hay base cargada todavía');
   var payload = {
-    tipo:'base-bodega', version:1,
+    tipo:'base-bodega', version:2,
     exportado: new Date().toLocaleDateString('es-CL'),
+    sku: skuLista(),
     inventario: inventory.map(function(i){
-      return { ubicacion:normU(i.ubicacion), sku:up(i.sku), descripcion:i.descripcion,
+      return { ubicacion:normU(i.ubicacion), sku:up(i.sku), descripcion:nombreDe(i.sku,i.descripcion),
                cantidad:+i.cantidad||0, lote:i.lote, fecha_elab:i.fecha_elab,
                fecha_venc:i.fecha_venc, fecha_ing:i.fecha_ing };
     })
@@ -1698,6 +1857,9 @@ function aplicarMovimientos(movs){
     rep.porUsuario[m.usuario] = (rep.porUsuario[m.usuario] || 0) + 1;
 
     if(m.tipo === 'INGRESO'){
+      HIST.add({ ts:m.ts, tipo:'INGRESO', origen:'celular', ubicacion:u, sku:m.sku,
+                 descripcion:m.descripcion, lote:m.lote, delta:+m.delta||0,
+                 saldo:(it ? (+it.cantidad||0)+(+m.delta||0) : +m.delta||0), usuario:m.usuario });
       if(it) it.cantidad = (+it.cantidad||0) + (+m.delta||0);
       else {
         inventory.push({ id:seq++, ubicacion:u, sku:up(m.sku), descripcion:m.descripcion||'',
@@ -1708,6 +1870,9 @@ function aplicarMovimientos(movs){
       rep.ok++;
 
     } else if(m.tipo === 'SALIDA'){
+      HIST.add({ ts:m.ts, tipo:'SALIDA', origen:'celular', ubicacion:u, sku:m.sku,
+                 lote:m.lote, delta:+m.delta||0, saldo:m.saldo, usuario:m.usuario,
+                 nota: it ? '' : 'la posición figuraba vacía en la base' });
       if(!it){
         rep.conflictos.push({ m:m, por:'Se retiró de una posición que aquí figura vacía' });
         return;
@@ -1724,6 +1889,10 @@ function aplicarMovimientos(movs){
       rep.ok++;
 
     } else if(m.tipo === 'CONTEO'){
+      HIST.add({ ts:m.ts, tipo:'CONTEO', origen:'celular', ubicacion:u, sku:m.sku,
+                 lote:m.lote, delta:+m.delta||0, saldo:m.saldo, usuario:m.usuario,
+                 nota: it ? ((+it.cantidad||0)!==(+m.saldo||0) ? 'la base decía '+it.cantidad : '')
+                          : 'la posición figuraba vacía en la base' });
       if(!it){
         if((+m.saldo||0) > 0){
           inventory.push({ id:seq++, ubicacion:u, sku:up(m.sku), descripcion:'',
@@ -1742,6 +1911,246 @@ function aplicarMovimientos(movs){
     }
   });
   return rep;
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  CATÁLOGO DE SKU — carga del Excel maestro
+// ═══════════════════════════════════════════════════════════════════════
+function cargarSKU(ev){
+  var f = ev.target.files[0]; if(!f) return;
+  var rd = new FileReader();
+  rd.onload = function(e){
+    try{
+      var wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      var ws = wb.Sheets[wb.SheetNames[0]];
+      var filas = XLSX.utils.sheet_to_json(ws, {header:1, raw:false, defval:''});
+      if(filas.length < 2) throw new Error('la hoja viene vacía');
+
+      // Se localizan las columnas por su nombre, no por su posición
+      var enc = filas[0].map(function(x){ return String(x).toUpperCase().trim(); });
+      function col(claves){
+        for(var i=0;i<enc.length;i++)
+          for(var k=0;k<claves.length;k++)
+            if(enc[i].indexOf(claves[k]) >= 0) return i;
+        return -1;
+      }
+      var iS = col(['ARTICULO','ARTÍCULO','SKU','CODIGO','CÓDIGO']);
+      var iD = col(['DESCRIP']);
+      var iC = col(['CATEGOR','FAMILIA','GRUPO']);
+      if(iS < 0 || iD < 0) throw new Error('faltan las columnas de código y descripción');
+
+      var vistos = {}, out = [], dups = 0, sinCat = 0;
+      for(var r=1;r<filas.length;r++){
+        var cod = String(filas[r][iS]||'').trim();
+        var des = String(filas[r][iD]||'').trim();
+        if(!cod) continue;
+        var k = cod.toUpperCase();
+        if(vistos[k]){ dups++; continue; }
+        vistos[k] = 1;
+        var ct = iC >= 0 ? String(filas[r][iC]||'').trim() : '';
+        if(!ct) sinCat++;
+        out.push([cod, des, ct]);
+      }
+      if(!out.length) throw new Error('no se encontró ningún código válido');
+
+      // Se unifican las categorías que solo difieren en mayúsculas o tildes
+      var g = {};
+      out.forEach(function(r){
+        var kk = r[2].normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim();
+        g[kk] = g[kk] || {};
+        g[kk][r[2]] = (g[kk][r[2]]||0)+1;
+      });
+      var canon = {};
+      Object.keys(g).forEach(function(kk){
+        var mejor='', n=-1;
+        Object.keys(g[kk]).forEach(function(v){ if(g[kk][v]>n){ n=g[kk][v]; mejor=v; } });
+        canon[kk]=mejor;
+      });
+      var antes = Object.keys(out.reduce(function(a,r){ a[r[2]]=1; return a; },{})).length;
+      out.forEach(function(r){
+        r[2] = canon[r[2].normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim()];
+      });
+      var despues = Object.keys(out.reduce(function(a,r){ a[r[2]]=1; return a; },{})).length;
+
+      localStorage.setItem('bq_sku', JSON.stringify(out));
+      skuIndexar();
+      HIST.add({ tipo:'CATALOGO', origen:'oficina', usuario:'oficina',
+                 nota:'se cargó el maestro de SKU: '+out.length+' productos desde '+f.name });
+      renderList(); if(editUbic) renderModal();
+
+      var msg = '🏷 ' + out.length + ' SKU cargados';
+      if(dups) msg += ' · ' + dups + ' códigos repetidos omitidos';
+      if(antes !== despues) msg += ' · ' + (antes-despues) + ' categorías unificadas';
+      if(sinCat) msg += ' · ' + sinCat + ' sin categoría';
+      toast(msg);
+      setStatus(msg);
+    } catch(err){
+      toast('⛔ No pude leer el archivo de SKU: ' + err.message);
+    }
+    ev.target.value = '';
+  };
+  rd.readAsArrayBuffer(f);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+//  INFORME DE MOVIMIENTOS — pantalla y descarga a Excel
+// ═══════════════════════════════════════════════════════════════════════
+var INFORME = { datos:[], rango:'todo', desde:'', hasta:'' };
+
+function dHoy(){ var d=new Date(); return d.toISOString().slice(0,10); }
+function dMenos(n){ var d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); }
+
+function filtrarInforme(){
+  var d = INFORME.desde, h = INFORME.hasta;
+  return INFORME.datos.filter(function(m){
+    var f = String(m.ts).slice(0,10);
+    if(d && f < d) return false;
+    if(h && f > h) return false;
+    return true;
+  });
+}
+
+function abrirInforme(){
+  HIST.todos().then(function(arr){
+    INFORME.datos = arr.sort(function(a,b){ return String(a.ts).localeCompare(String(b.ts)); });
+    setRango('todo');
+    document.getElementById('modal-overlay').classList.add('open');
+  });
+}
+
+function setRango(r){
+  INFORME.rango = r;
+  if(r === 'todo'){ INFORME.desde=''; INFORME.hasta=''; }
+  else if(r === 'hoy'){ INFORME.desde = dHoy(); INFORME.hasta = dHoy(); }
+  else if(r === 'semana'){ INFORME.desde = dMenos(6); INFORME.hasta = dHoy(); }
+  else if(r === 'mes'){ INFORME.desde = dHoy().slice(0,8)+'01'; INFORME.hasta = dHoy(); }
+  pintarInforme();
+}
+function setRangoManual(){
+  INFORME.rango = 'manual';
+  INFORME.desde = document.getElementById('inf-desde').value;
+  INFORME.hasta = document.getElementById('inf-hasta').value;
+  pintarInforme();
+}
+
+function pintarInforme(){
+  var todos = INFORME.datos, sel = filtrarInforme();
+  var porTipo = {}, porUser = {}, porOrigen = {};
+  sel.forEach(function(m){
+    porTipo[m.tipo]   = (porTipo[m.tipo]||0)+1;
+    porUser[m.usuario||'—'] = (porUser[m.usuario||'—']||0)+1;
+    porOrigen[m.origen||'—'] = (porOrigen[m.origen||'—']||0)+1;
+  });
+  var primero = todos.length ? String(todos[0].ts).slice(0,10) : '—';
+  var ultimo  = todos.length ? String(todos[todos.length-1].ts).slice(0,10) : '—';
+
+  document.getElementById('modal-title').textContent = '📊 Informe de movimientos';
+  document.getElementById('modal-sub').textContent = todos.length
+    ? 'Bitácora completa: ' + todos.length + ' movimientos entre ' + primero + ' y ' + ultimo
+    : 'Todavía no hay movimientos registrados';
+
+  var chip = function(r,t){ return '<button class="btn '+(INFORME.rango===r?'btn-gold':'btn-ghost')
+    + '" style="padding:5px 11px;font-size:11px" onclick="setRango(\''+r+'\')">'+t+'</button>'; };
+
+  var html = '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">'
+    + chip('todo','Todo') + chip('hoy','Hoy') + chip('semana','Últimos 7 días') + chip('mes','Este mes')
+    + '</div>'
+    + '<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;font-size:11px;color:var(--muted)">'
+    + 'Desde <input type="date" id="inf-desde" value="'+(INFORME.desde||'')+'" onchange="setRangoManual()" '
+    + 'style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 7px">'
+    + 'hasta <input type="date" id="inf-hasta" value="'+(INFORME.hasta||'')+'" onchange="setRangoManual()" '
+    + 'style="background:var(--surface);border:1px solid var(--border);color:var(--text);border-radius:5px;padding:4px 7px">'
+    + '</div>';
+
+  if(!sel.length){
+    html += '<div class="hint">No hay movimientos en ese rango.</div>';
+  } else {
+    html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">'
+      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px">'
+      + '<div style="font-size:22px;font-family:\'JetBrains Mono\';color:var(--gold);font-weight:700">'+sel.length+'</div>'
+      + '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">movimientos</div></div>'
+      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px">'
+      + '<div style="font-size:12px;color:var(--text);line-height:1.7">'
+      + Object.keys(porTipo).sort().map(function(k){ return k+' <b style="color:var(--gold)">'+porTipo[k]+'</b>'; }).join('<br>')
+      + '</div></div>'
+      + '<div style="background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:10px">'
+      + '<div style="font-size:12px;color:var(--text);line-height:1.7">'
+      + Object.keys(porUser).sort().slice(0,5).map(function(k){ return esc(k)+' <b style="color:var(--green)">'+porUser[k]+'</b>'; }).join('<br>')
+      + '</div></div></div>';
+
+    var ult = sel.slice(-12).reverse();
+    html += '<div class="hint" style="margin-bottom:5px">Últimos movimientos del rango:</div>';
+    html += ult.map(function(m){
+      var col = m.tipo==='SALIDA' ? 'var(--red)' : (m.tipo==='INGRESO' ? 'var(--green)' : 'var(--gold)');
+      // Los hitos (carga de Excel, vaciado) no tienen posición: ahí lo que importa es la nota
+      var hito = !m.ubicacion;
+      if(hito) col = 'var(--muted)';
+      return '<div class="mix-row" style="border-left-color:'+col+'">'
+        + '<span class="u" style="color:'+col+';min-width:120px">'+esc(m.ubicacion || m.tipo.replace('_',' '))+'</span>'
+        + '<span class="k">'
+        + (hito ? esc(m.nota||m.tipo)
+                : esc(m.tipo)+' · '+esc(m.sku||'')
+                  + (m.delta!=='' ? ' · <b style="color:'+col+'">'+(m.delta>0?'+':'')+m.delta+'</b>' : '')
+                  + (m.nota ? ' <span style="color:var(--gold)">('+esc(m.nota)+')</span>' : ''))
+        + '<br><span style="color:var(--muted)">'+String(m.ts).slice(0,16).replace('T',' ')+' · '+esc(m.usuario||'')+' · '+esc(m.origen||'')+'</span></span></div>';
+    }).join('');
+  }
+
+  html += '<div class="hint" style="margin-top:12px">La bitácora <b style="color:var(--text)">no se borra nunca</b>: '
+    + 'sobrevive a cargar un Excel nuevo y a vaciar la base. Vive en este computador, así que '
+    + 'descarga el Excel de vez en cuando y guárdalo aparte — ese archivo es el histórico definitivo.</div>'
+    + '<div class="form-actions">'
+    + '<button class="btn btn-green" onclick="bajarInforme()"'+(sel.length?'':' disabled')+'>⬇ Descargar Excel</button>'
+    + '<button class="btn btn-ghost" onclick="closeModal()">Cerrar</button></div>';
+
+  document.getElementById('modal-body').innerHTML = html;
+}
+
+function bajarInforme(){
+  var sel = filtrarInforme();
+  if(!sel.length) return toast('No hay movimientos en ese rango');
+
+  var H = ['FECHA','HORA','TIPO','ORIGEN','UBICACION','ZONA','SKU','DESCRIPCION',
+           'LOTE','CANTIDAD','SALDO','USUARIO','OBSERVACION'];
+  var filas = [H];
+  sel.forEach(function(m){
+    var t = String(m.ts);
+    var z = (m.ubicacion||'')[0];
+    var zt = { A:'AMBIENTE', F:'FRIO', C:'CONGELADO' }[z] || '';   // sin emoji: en Excel se filtra
+    filas.push([ t.slice(0,10), t.slice(11,19), m.tipo, m.origen, m.ubicacion,
+      zt, m.sku, m.descripcion, m.lote,
+      m.delta === '' ? '' : +m.delta, m.saldo === '' ? '' : +m.saldo,
+      m.usuario, m.nota ]);
+  });
+
+  // Resumen por día y tipo, que es lo que se mira primero
+  var dias = {}, tipos = {};
+  sel.forEach(function(m){
+    var d = String(m.ts).slice(0,10);
+    dias[d] = dias[d] || {};
+    dias[d][m.tipo] = (dias[d][m.tipo]||0) + 1;
+    tipos[m.tipo] = true;
+  });
+  var tl = Object.keys(tipos).sort();
+  var res = [['FECHA'].concat(tl).concat(['TOTAL'])];
+  Object.keys(dias).sort().forEach(function(d){
+    var fila = [d], tot = 0;
+    tl.forEach(function(t){ var v = dias[d][t]||0; fila.push(v); tot += v; });
+    fila.push(tot); res.push(fila);
+  });
+
+  var wb = XLSX.utils.book_new();
+  var ws1 = XLSX.utils.aoa_to_sheet(filas);
+  ws1['!cols'] = [{wch:11},{wch:9},{wch:12},{wch:10},{wch:15},{wch:12},{wch:12},{wch:28},
+                  {wch:12},{wch:10},{wch:9},{wch:14},{wch:40}];
+  XLSX.utils.book_append_sheet(wb, ws1, 'MOVIMIENTOS');
+  var ws2 = XLSX.utils.aoa_to_sheet(res);
+  ws2['!cols'] = [{wch:12}].concat(tl.map(function(){ return {wch:12}; })).concat([{wch:10}]);
+  XLSX.utils.book_append_sheet(wb, ws2, 'RESUMEN POR DIA');
+
+  var suf = (INFORME.desde || 'inicio') + '_a_' + (INFORME.hasta || dHoy());
+  XLSX.writeFile(wb, 'Movimientos_Bodega_' + suf + '.xlsx');
+  toast('📊 Informe descargado (' + sel.length + ' movimientos)');
 }
 
 function cargarMovimientos(ev){

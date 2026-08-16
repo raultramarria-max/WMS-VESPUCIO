@@ -4,9 +4,10 @@
    de la cámara de frío. Los datos del inventario NO viven aquí: esos
    están en localStorage y no se tocan al actualizar.
    ═══════════════════════════════════════════════════════════════════ */
-const VERSION = 'bodega-v1';
+const VERSION = 'bodega-v3';
 const SHELL = [
   './bodega_movil.html',
+  './etiquetas_sku.html',
   './manifest.json',
   './icon-192.png',
   './icon-512.png',
