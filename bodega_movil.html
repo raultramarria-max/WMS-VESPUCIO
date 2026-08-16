@@ -362,6 +362,9 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
     </div>
 
     <div id="bloque-local">
+      <p class="hint" style="color:var(--green);border-left:3px solid var(--green);
+         padding:7px 11px;margin:10px 0;font-size:12px">✓ En este modo <b>solo hace falta tu
+         nombre</b>. No hay que llenar ninguna clave ni crear cuentas.</p>
       <div class="lc-box">
         <div class="lc-row"><span>Inventario cargado en este teléfono</span><b id="lc-inv">0</b></div>
         <div class="lc-row"><span>Movimientos sin enviar</span><b id="lc-movs">0</b></div>
@@ -380,6 +383,9 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
     </div>
 
     <div id="bloque-nube">
+    <p class="hint" style="color:var(--gold);border-left:3px solid var(--gold);
+       padding:7px 11px;margin:10px 0;font-size:12px">Estos tres datos salen de la consola de
+       Firebase. Si todavía no creaste el proyecto, vuelve a <b>SIN INTERNET</b>: ahí no hacen falta.</p>
     <label class="fl">Firebase — projectId</label>
     <input id="cfg-pid" placeholder="bodega-quinta">
     <label class="fl">Firebase — apiKey</label>
@@ -398,10 +404,13 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
 <div class="ov" id="aviso-file">
   <div class="ov-box">
     <h2 style="color:var(--red)">⚠ Falta subirla al sitio</h2>
-    <p style="font-size:13.5px;line-height:1.6;color:var(--text)">Abriste el archivo
-      directamente desde el teléfono. Así <b>la cámara no puede encenderse</b>: los navegadores
-      solo dan acceso a la cámara cuando la página viene de una dirección que empieza con
-      <b>https://</b>. No es un problema de permisos ni del teléfono.</p>
+    <p style="font-size:13.5px;line-height:1.6;color:var(--text)"><span id="aviso-como">—</span>
+      Así <b>la cámara no puede encenderse</b>: los navegadores solo dan acceso a la cámara
+      cuando la página viene de una dirección que empieza con <b>https://</b>. No es un
+      problema de permisos ni del teléfono.</p>
+    <p style="font-family:'JetBrains Mono';font-size:10px;color:var(--red);background:var(--bg);
+       border:1px solid var(--border);border-radius:5px;padding:7px 9px;margin-top:9px;
+       word-break:break-all" id="aviso-url">—</p>
     <p class="hint" style="margin-top:11px">Sube los archivos a tu sitio de GitHub Pages y
       abre la app desde esa dirección. Ahí la cámara funciona, y además se puede instalar
       como app para que abra sin señal.</p>
@@ -1501,13 +1510,20 @@ $('who-txt').textContent = S.user || '—';
 $('in-elab').value = hoy();
 if (esLocal()){ localCargar(); localEstado(); refreshViews(); }
 else initFirebase();
+// Sin esto, la primera vez que el modal se abre solo (por requireDB o por
+// falta de configuración) aparecen los dos bloques a la vez y el operario
+// cree que tiene que llenar los datos de Firebase.
+pintarModo();
 
 // ═══════════════════════════════════════════════════════════════════════
 //  INSTALACIÓN COMO APP
 //  El service worker guarda la app en el teléfono. Sin esto, abrirla en
 //  la cámara de frío sin señal daría la pantalla de "sin conexión".
 // ═══════════════════════════════════════════════════════════════════════
-const enHttps = location.protocol === 'https:' || location.hostname === 'localhost';
+// content:// (abrir desde WhatsApp o Descargas), file://, http:// en la red
+// local… todos impiden la cámara igual. Lo único que sirve es https.
+const enHttps = location.protocol === 'https:'
+             || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
 if ('serviceWorker' in navigator && enHttps){
   navigator.serviceWorker.register('./sw.js').then(reg => {
@@ -1522,9 +1538,16 @@ if ('serviceWorker' in navigator && enHttps){
   }).catch(() => {});
 }
 
-// Si se abrió como archivo suelto, la cámara nunca va a funcionar: hay que decirlo
-if (location.protocol === 'file:'){
-  setTimeout(() => $('aviso-file').classList.add('open'), 600);
+// Si no viene de https, la cámara nunca va a funcionar: hay que decirlo
+if (!enHttps){
+  const desdeApp = location.protocol === 'content:' || location.protocol === 'file:';
+  $('aviso-como').textContent = location.protocol === 'content:'
+    ? 'Lo abriste desde WhatsApp (o desde Descargas). El teléfono te lo muestra, pero para el navegador sigue siendo un archivo suelto.'
+    : (location.protocol === 'file:'
+        ? 'Abriste el archivo directamente desde la memoria del teléfono.'
+        : 'Esta dirección no empieza con https://.');
+  $('aviso-url').textContent = location.href.slice(0, 60) + (location.href.length > 60 ? '…' : '');
+  setTimeout(() => $('aviso-file').classList.add('open'), 500);
 }
 $('aviso-ok').addEventListener('click', () => $('aviso-file').classList.remove('open'));
 if (!S.user) setTimeout(() => $('cfg').classList.add('open'), 400);
