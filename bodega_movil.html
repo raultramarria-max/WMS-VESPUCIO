@@ -113,6 +113,20 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
 .bloqueo .sug b{color:var(--green)}
 .empty{text-align:center;color:var(--muted);padding:30px 14px;font-size:13px;line-height:1.6}
 
+/* ── pallets de recepción (tarjas MP) ── */
+.pl-card{margin:9px 0 3px;padding:11px 13px;border-radius:8px;background:rgba(46,196,182,.09);
+         border:1.5px solid rgba(46,196,182,.5);font-size:12px;line-height:1.5}
+.pl-card>b{display:block;font-size:13.5px;color:var(--text);margin-bottom:7px;line-height:1.35}
+.pl-card .rrow{margin:3px 0}
+.pl-quitar{width:100%;margin-top:10px;padding:8px;border-radius:6px;background:transparent;
+           border:1px solid var(--border);color:var(--muted);font-size:11px;letter-spacing:.5px;cursor:pointer}
+.pl-chips{display:flex;flex-wrap:wrap;gap:6px}
+.pl-chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 10px;
+         background:var(--card);border:1px solid var(--border);border-radius:7px;cursor:pointer;text-align:left}
+.pl-chip b{font-family:'JetBrains Mono';font-size:12px;color:var(--gold);letter-spacing:.5px}
+.pl-chip span{font-size:10px;color:var(--muted)}
+.pl-chip:active{border-color:var(--green)}
+
 .log-item{display:flex;align-items:center;gap:9px;padding:8px 10px;background:var(--card);border-radius:7px;margin-bottom:5px}
 .log-tag{font-family:'JetBrains Mono';font-size:9px;font-weight:600;padding:3px 6px;border-radius:3px;flex-shrink:0}
 .tag-IN{background:#1e3a3a;color:#2ec4b6}
@@ -238,6 +252,17 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
 
   <!-- ══════════ INGRESO ══════════ -->
   <section class="panel active" id="p-ingreso">
+    <div class="step" id="in-s0">
+      <div class="step-hdr"><span class="step-n">📦</span><h3>Escanear tarja del pallet</h3></div>
+      <div class="captured empty" id="in-cont">sin tarja</div>
+      <div id="in-cont-det"></div>
+      <button class="scanbtn" data-scan="in-cont-scan">📷 ESCANEAR CONTENEDOR (MP)</button>
+      <div id="in-pend"></div>
+      <p class="hint" style="margin-top:9px">La tarja trae el SKU, el lote, la cantidad y el vencimiento
+        de la recepción: solo queda escanear la posición. Si el pallet no viene de una recepción,
+        salta este paso y captura a mano.</p>
+    </div>
+
     <div class="step" id="in-s1">
       <div class="step-hdr"><span class="step-n">1</span><h3>Escanear ubicación</h3></div>
       <div class="captured empty" id="in-ubic">sin ubicación</div>
@@ -404,6 +429,21 @@ textarea{font-family:'Inter';font-size:14px;resize:vertical;min-height:52px}
     <input id="cfg-app" placeholder="1:123…:web:abc…">
     <p class="hint" style="margin-top:10px">Estos 3 datos salen de Firebase → Configuración del proyecto → Tus apps → Web. Se guardan solo en este teléfono.</p>
     </div>
+
+    <div style="height:16px"></div>
+    <label class="fl">Pallets de recepción (tarjas MP)</label>
+    <div class="lc-box">
+      <div class="lc-row"><span>Pallets conocidos</span><b id="pl-tot">0</b></div>
+      <div class="lc-row"><span>Por ubicar</span><b id="pl-pend">0</b></div>
+      <div class="lc-row"><span>Última actualización</span><b id="pl-fecha">—</b></div>
+    </div>
+    <p class="hint" style="margin:8px 0">Si la app de <b>Recepción OC</b> está en este mismo sitio,
+      los pallets llegan solos. Si la recepción se hace en otro teléfono, carga aquí el archivo
+      <b>pallets_….json</b> que envía esa app.</p>
+    <input type="file" id="pl-file" accept=".json,application/json" style="padding:9px;font-size:12px">
+    <div style="height:9px"></div>
+    <button class="scanbtn ghost" id="pl-sync">🔄 BUSCAR PALLETS EN ESTE TELÉFONO</button>
+
     <div style="height:14px"></div>
     <button class="scanbtn green" id="cfg-save">GUARDAR</button>
     <div style="height:8px"></div>
@@ -481,6 +521,134 @@ const REGLA_POSICION = 'LIBRE';
 const reglaEstricta = () => REGLA_POSICION !== 'LIBRE';
 
 // ═══════════════════════════════════════════════════════════════════════
+//  PALLETS DE RECEPCIÓN · el puente con la app "Recepción OC"
+//  ---------------------------------------------------------------------
+//  Cada tarja impresa en recepción lleva un código de contenedor MP######
+//  único. Al escanearlo aquí, el pallet llega con todo: SKU, descripción,
+//  cantidad, lote, vencimiento, OC y factura. Solo falta la posición.
+//
+//  Cómo viajan los datos (las dos vías conviven):
+//   1. Mismo sitio  → localStorage 'quinta_pallets', que escribe recepción.
+//   2. Otro teléfono→ archivo pallets_*.json que se carga desde 👤.
+//
+//  Lo que se ubica se devuelve en 'quinta_pallets_ubic', así la app de
+//  recepción muestra dónde quedó cada pallet.
+// ═══════════════════════════════════════════════════════════════════════
+const PL_KEY   = 'bq_pallets';           // registro propio de este teléfono
+const PL_IN    = 'quinta_pallets';       // bandeja que llena Recepción OC
+const PL_UBIC  = 'quinta_pallets_ubic';  // devolución hacia Recepción OC
+const PL_FECHA = 'bq_pallets_fecha';
+const PL_MAX   = 6000;
+
+const esCont = c => /^MP\d{4,8}$/.test(String(c || '').toUpperCase().trim());
+const normCont = c => String(c || '').toUpperCase().trim();
+
+function plLeer(){
+  try { const a = JSON.parse(localStorage.getItem(PL_KEY) || '[]'); return Array.isArray(a) ? a : []; }
+  catch(_){ return []; }
+}
+function plGuardar(arr){
+  try { localStorage.setItem(PL_KEY, JSON.stringify(arr.slice(-PL_MAX))); return true; }
+  catch(_){ toast('⛔ Sin espacio para guardar los pallets', 'err'); return false; }
+}
+// Une lo que llega (bandeja o archivo) con lo que ya está, sin pisar la ubicación
+function plMerge(lista){
+  if (!Array.isArray(lista) || !lista.length) return 0;
+  const map = {};
+  (S.pallets && S.pallets.length ? S.pallets : plLeer()).forEach(p => map[normCont(p.cont)] = p);
+  let n = 0, cambios = 0;
+  lista.forEach(p => {
+    const c = normCont(p.cont);
+    if (!c) return;
+    const prev = map[c] || {};
+    const antes = JSON.stringify(prev);
+    // Manda lo de este teléfono; si aquí no se sabe, sirve lo que traiga el archivo
+    map[c] = Object.assign({}, prev, p, {
+      cont: c,
+      ubicacion:  prev.ubicacion  || p.ubicacion  || '',
+      ubicado_ts: prev.ubicado_ts || p.ubicado_ts || '',
+      ubicado_por:prev.ubicado_por|| p.ubicado_por|| '',
+      retirado:   prev.retirado   || false
+    });
+    if (!prev.cont) n++;
+    if (JSON.stringify(map[c]) !== antes) cambios++;
+  });
+  if (!cambios) return 0;                    // nada nuevo: no se reescribe nada
+  S.pallets = Object.keys(map).map(k => map[k]);
+  plGuardar(S.pallets);
+  return n;
+}
+// Bandeja compartida: solo funciona si las dos apps están en el mismo sitio
+function plSincronizar(avisar){
+  let entra = [];
+  try { const a = JSON.parse(localStorage.getItem(PL_IN) || '[]'); if (Array.isArray(a)) entra = a; }
+  catch(_){}
+  const nuevos = plMerge(entra);
+  if (nuevos) localStorage.setItem(PL_FECHA, new Date().toLocaleString('es-CL'));
+  if (avisar) toast(nuevos ? '✓ ' + nuevos + ' pallet(s) nuevos de recepción'
+                           : (entra.length ? 'Ya tenías todos los pallets' : 'No hay pallets de recepción en este teléfono'),
+                    nuevos ? 'ok' : 'info');
+  plEstado();
+  return nuevos;
+}
+function plCargar(){
+  try { S.pallets = plLeer(); } catch(_){ S.pallets = []; }
+  plSincronizar(false);
+}
+const plBuscar = c => S.pallets.find(p => normCont(p.cont) === normCont(c)) || null;
+const plPendientes = () => S.pallets.filter(p => !p.ubicacion && !p.retirado);
+// La posición se vació: esos pallets salieron de bodega, no vuelven a la lista de pendientes
+function plRetirar(conts){
+  if (!conts || !conts.length) return;
+  let toco = false;
+  conts.forEach(c => { const p = plBuscar(c); if (p){ p.retirado = true; p.ubicacion = ''; toco = true; } });
+  if (!toco) return;
+  plGuardar(S.pallets);
+  try {
+    const m = JSON.parse(localStorage.getItem(PL_UBIC) || '{}');
+    conts.forEach(c => { if (m[normCont(c)]) m[normCont(c)].ubic = 'RETIRADO'; });
+    localStorage.setItem(PL_UBIC, JSON.stringify(m));
+  } catch(_){}
+  plEstado();
+}
+// Marca el pallet como ubicado y se lo cuenta a la app de recepción
+function plUbicar(cont, ubic){
+  const p = plBuscar(cont);
+  if (!p) return;
+  p.ubicacion = ubic;
+  p.ubicado_ts = new Date().toISOString();
+  p.ubicado_por = S.user || '';
+  plGuardar(S.pallets);
+  try {
+    const m = JSON.parse(localStorage.getItem(PL_UBIC) || '{}');
+    m[normCont(cont)] = { ubic, ts: p.ubicado_ts, user: p.ubicado_por };
+    localStorage.setItem(PL_UBIC, JSON.stringify(m));
+  } catch(_){}
+  plEstado();
+}
+function plEstado(){
+  const t = S.pallets.length, pend = plPendientes().length;
+  if ($('pl-tot'))   $('pl-tot').textContent = t;
+  if ($('pl-pend')){ $('pl-pend').textContent = pend; $('pl-pend').style.color = pend ? 'var(--gold)' : 'var(--muted)'; }
+  if ($('pl-fecha')) $('pl-fecha').textContent = localStorage.getItem(PL_FECHA) || '—';
+  renderPendientes();
+}
+// Los pallets que esperan posición, a un toque de distancia
+function renderPendientes(){
+  const box = $('in-pend'); if (!box) return;
+  const pend = plPendientes();
+  if (!pend.length){ box.innerHTML = ''; return; }
+  const lista = pend.slice(-14).reverse();
+  box.innerHTML = '<label class="fl" style="margin-top:12px">Pallets por ubicar (' + pend.length + ')</label>'
+    + '<div class="pl-chips">' + lista.map(p =>
+        '<button class="pl-chip" data-pl="' + esc(p.cont) + '"><b>' + esc(p.cont) + '</b>'
+        + '<span>' + esc(p.sku || '') + (p.lote ? ' · ' + esc(p.lote) : '') + '</span></button>').join('')
+    + '</div>';
+  box.querySelectorAll('[data-pl]').forEach(b =>
+    b.addEventListener('click', () => setIngCont(b.dataset.pl)));
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 //  ESTADO
 // ═══════════════════════════════════════════════════════════════════════
 const S = {
@@ -488,7 +656,8 @@ const S = {
   user: localStorage.getItem('bq_user') || '',
   db: null, fb: null,
   scanTarget: null,
-  ingreso: { ubic:'', sku:'' },
+  pallets: [],             // pallets de recepción conocidos por este teléfono
+  ingreso: { ubic:'', sku:'', cont:'', pallet:null },
   salida:  { ubic:'' },
   conteo:  { ubic:'', diffs:[] },
   log: [],
@@ -729,18 +898,120 @@ $('scan-manual-in').addEventListener('keydown', e => {
   if (e.key === 'Enter'){ e.preventDefault(); $('scan-manual-ok').click(); }
 });
 
+// El operario no tiene por qué acertarle al botón: si escanea una tarja
+// donde se pedía la posición (o al revés), la app igual entiende el código.
+function rutearIngreso(code, esperado){
+  const c = String(code || '').trim();
+  if (esCont(c))  return setIngCont(c);
+  if (normUbic(c)) return setIngUbic(c);
+  if (esperado === 'ubic') return toast('⛔ ' + c + ': ' + porQueInvalida(c), 'err');
+  return setIngSku(c);
+}
 document.querySelectorAll('[data-scan]').forEach(b => b.addEventListener('click', () => {
   const t = b.dataset.scan;
-  if (t === 'in-ubic-scan')  openScan('UBICACIÓN', c => setIngUbic(c));
-  if (t === 'in-sku-scan')   openScan('SKU',       c => setIngSku(c));
+  if (t === 'in-cont-scan')  openScan('TARJA DEL PALLET', c => rutearIngreso(c, 'cont'));
+  if (t === 'in-ubic-scan')  openScan('UBICACIÓN', c => rutearIngreso(c, 'ubic'));
+  if (t === 'in-sku-scan')   openScan('SKU',       c => rutearIngreso(c, 'sku'));
   if (t === 'cs-scan')       openScan('CONSULTAR', c => { $('cs-q').value = c; runConsulta(c); });
-  if (t === 'ot-ubic-scan')  openScan('UBICACIÓN', c => setSalUbic(c));
+  if (t === 'ot-ubic-scan')  openScan('UBICACIÓN O TARJA', c => setSalUbic(c));
   if (t === 'ct-ubic-scan')  openScan('UBICACIÓN', c => setCntUbic(c));
 }));
 
 // ═══════════════════════════════════════════════════════════════════════
 //  INGRESO
 // ═══════════════════════════════════════════════════════════════════════
+// ── Tarja escaneada: el pallet entra completo desde la recepción ──────
+function setIngCont(code){
+  const c = normCont(code);
+  if (!esCont(c)){ toast('⛔ ' + c + ' no es un código de contenedor (MP000000)', 'err'); return; }
+  const p = plBuscar(c);
+  const box = $('in-cont-det');
+
+  if (!p){
+    S.ingreso.cont = ''; S.ingreso.pallet = null;
+    $('in-cont').className = 'captured'; $('in-cont').textContent = c;
+    box.innerHTML = '<div class="bloqueo"><h5>⚠ Tarja desconocida</h5>'
+      + esc(c) + ' no está en este teléfono. Puede ser de una recepción hecha en otro equipo.<br>'
+      + 'Pide el archivo <b>pallets_….json</b> y cárgalo en 👤, o captura el pallet a mano '
+      + 'escaneando el código de SKU de la misma tarja.</div>';
+    toast('⚠ ' + c + ' no está en la lista de pallets', 'err');
+    return;
+  }
+
+  // Si ya se guardó antes, esto es un traslado, no un ingreso nuevo
+  if (p.ubicacion){
+    if (!confirm('El pallet ' + c + ' ya está en ' + p.ubicacion + '.\n\n'
+               + '¿Lo estás moviendo a otra posición?\n\n'
+               + 'Aceptar = mover   ·   Cancelar = dejarlo donde está')) return;
+  }
+
+  S.ingreso.cont = c;
+  S.ingreso.pallet = p;
+  S.ingreso.sku = upper(p.sku);
+  // Al mover, la posición anterior no sirve: hay que escanear la nueva
+  if (p.ubicacion){
+    S.ingreso.ubic = '';
+    $('in-ubic').className = 'captured empty'; $('in-ubic').textContent = 'sin ubicación';
+    $('in-ocup').innerHTML = ''; $('in-s1').classList.remove('done');
+  }
+
+  $('in-cont').className = 'captured';
+  $('in-cont').innerHTML = esc(c) + (p.ubicacion
+      ? ' <span class="zbadge z-C">MOVER DESDE ' + esc(p.ubicacion) + '</span>'
+      : ' <span class="zbadge z-A">RECEPCIÓN</span>');
+  box.innerHTML = '<div class="pl-card">'
+    + '<b>' + esc(p.desc || p.sku || '') + '</b>'
+    + row('SKU', esc(p.sku || '—'))
+    + row('Cantidad', '<b style="color:var(--green);font-size:15px">' + (+p.cant || 0) + '</b>'
+        + (p.cajas ? ' <span class="lbl">· ' + p.cajas + ' cajas</span>' : ''))
+    + row('Lote', esc(p.lote || '—'))
+    + '<div class="rrow"><span class="lbl">Vencimiento</span><span class="val ' + vencClass(p.venc) + '">' + vencTxt(p.venc) + '</span></div>'
+    + row('OC', esc(p.oc || '—') + (p.factura ? ' · Factura ' + esc(p.factura) : ''))
+    + (p.prov ? row('Proveedor', esc(p.prov)) : '')
+    + (p.bultos > 1 ? row('Bulto', p.bulto + '/' + p.bultos) : '')
+    + '<button class="pl-quitar" id="in-cont-x">✕ Quitar la tarja y capturar a mano</button>'
+    + '</div>';
+  const bx = $('in-cont-x'); if (bx) bx.addEventListener('click', limpiarCont);
+
+  // Rellena los pasos 2 y 3 con lo que trae la tarja
+  $('in-sku').className = 'captured'; $('in-sku').textContent = upper(p.sku);
+  $('in-desc').value = p.desc || '';
+  $('in-cant').value = (+p.cant || 0);
+  $('in-lote').value = upper(p.lote || '');
+  $('in-elab').value = p.elab || '';
+  $('in-venc').value = p.venc || '';
+  $('in-comt').value = ['OC ' + (p.oc || ''), p.factura ? 'Factura ' + p.factura : '', p.prov || '',
+                        p.bultos > 1 ? 'bulto ' + p.bulto + '/' + p.bultos : '']
+                        .filter(Boolean).join(' · ');
+  const av = $('in-sku-av');
+  av.className = 'sku-av ok';
+  av.innerHTML = '<b>' + esc(p.desc || '') + '</b><br><span class="cat">viene de la tarja ' + esc(c) + '</span>';
+  $('in-s0').classList.add('done');
+  $('in-s2').classList.remove('wait'); $('in-s2').classList.add('done');
+  $('in-s3').classList.remove('wait');
+
+  revisarRegla();
+  toast('📦 ' + (p.desc || p.sku || c).slice(0,34) + ' · falta la posición');
+  if (!S.ingreso.ubic) setTimeout(() => openScan('UBICACIÓN', x => rutearIngreso(x, 'ubic')), 450);
+}
+// Saca un código de contenedor del registro del que se llevaron el pallet
+function quitarCont(item, cont){
+  if (!item || !cont) return;
+  const quedan = contsDe(item).filter(c => c !== normCont(cont));
+  const vivo = S.inventario.find(x => x.id === item.id);
+  if (vivo){ vivo.conts = quedan; vivo.contenedor = quedan[0] || ''; }
+  if (esLocal()){ localGuardar(); return; }
+  if (vivo && FS && S.db){
+    try { encolar(FS.updateDoc(FS.doc(S.db, 'inventario', item.id),
+      { conts: quedan, contenedor: quedan[0] || '' }), 'contenedor'); } catch(_){}
+  }
+}
+function limpiarCont(){
+  S.ingreso.cont = ''; S.ingreso.pallet = null;
+  $('in-cont').className = 'captured empty'; $('in-cont').textContent = 'sin tarja';
+  $('in-cont-det').innerHTML = '';
+  $('in-s0').classList.remove('done');
+}
 function setIngUbic(code){
   const u = normUbic(code);
   if (!u){ toast('⛔ ' + code + ': ' + porQueInvalida(code), 'err'); return; }
@@ -850,6 +1121,12 @@ $('in-save').addEventListener('click', async () => {
       : '⛔ ' + g.ubic + ' ya tiene el lote ' + (c.lote || 'sin lote'), 'err');
   }
 
+  const pal = g.pallet;
+  // Doble escaneo de la misma tarja en la misma posición: sumaría stock que no existe
+  if (pal && pal.ubicacion && pal.ubicacion === g.ubic){
+    limpiarCont();
+    return toast('⛔ ' + pal.cont + ' ya está guardado en ' + g.ubic, 'err');
+  }
   const rec = {
     ubicacion: g.ubic,
     sku: g.sku,
@@ -861,18 +1138,39 @@ $('in-save').addEventListener('click', async () => {
     fecha_ingreso: hoy(),
     comentario: $('in-comt').value.trim(),
     nivel: parseUbic(g.ubic).nivel,
-    prof:  parseUbic(g.ubic).prof
+    prof:  parseUbic(g.ubic).prof,
+    contenedor: g.cont || '',
+    oc:        pal ? (pal.oc || '')      : '',
+    factura:   pal ? (pal.factura || '') : '',
+    proveedor: pal ? (pal.prov || '')    : ''
   };
+
+  // Pallet que ya estaba guardado en otra posición: primero sale de allá
+  if (pal && pal.ubicacion && pal.ubicacion !== g.ubic){
+    const viejo = S.inventario.find(x => x.id === docId(pal.ubicacion, g.sku, lote));
+    if (viejo){
+      const sale = Math.min(+viejo.cantidad || 0, cant);
+      if (sale > 0){
+        const okOut = await guardarSalida(viejo, sale);
+        if (!okOut) return;
+        quitarCont(viejo, g.cont);      // el código se va con el pallet
+        pushLog('OUT', pal.ubicacion, g.sku, '−' + sale);
+      }
+    }
+  }
+
   const ok = await guardarIngreso(rec);
   if (!ok) return;
+  if (g.cont) plUbicar(g.cont, g.ubic);
   pushLog('IN', g.ubic, g.sku, '+' + cant);
-  toast('✓ ' + cant + ' u. en ' + g.ubic);
+  toast(g.cont ? '✓ ' + g.cont + ' guardado en ' + g.ubic : '✓ ' + cant + ' u. en ' + g.ubic);
+  limpiarCont();
   // Reset parcial: mantiene la ubicación para cargar varios SKU seguidos
   S.ingreso.sku = '';
   $('in-sku').className = 'captured empty'; $('in-sku').textContent = 'sin SKU';
   $('in-s2').classList.remove('done');
   $('in-s3').classList.add('wait');
-  ['in-desc','in-lote','in-comt'].forEach(id => $(id).value = '');
+  ['in-desc','in-lote','in-comt','in-venc'].forEach(id => $(id).value = '');
   $('in-sku-av').className = 'sku-av'; $('in-sku-av').innerHTML = '';
   $('in-cant').value = 1;
   $('in-alert').innerHTML = '';
@@ -903,6 +1201,40 @@ function runConsulta(q){
   const out = $('cs-out');
   if (!q){ out.innerHTML = '<div class="empty">Escanea una etiqueta de ubicación o de producto.</div>'; return; }
 
+  // ── Tarja: responde por el pallet, esté guardado o esperando ──
+  if (esCont(q)){
+    const p = plBuscar(q);
+    if (!p){
+      const its = S.inventario.filter(i => contsDe(i).indexOf(normCont(q)) >= 0);
+      out.innerHTML = its.length
+        ? '<label class="fl">Contenedor ' + esc(q) + '</label>' + its.map(i => cardHTML(i)).join('')
+        : '<div class="empty">⚠ El contenedor ' + esc(q) + ' no está en este teléfono.<br>'
+          + 'Carga el archivo de pallets desde 👤 o consulta por el SKU.</div>';
+      return;
+    }
+    const it = p.ubicacion ? S.inventario.find(x => x.id === docId(p.ubicacion, p.sku, p.lote)) : null;
+    out.innerHTML = '<label class="fl">Contenedor ' + esc(p.cont) + '</label>'
+      + '<div class="rcard" style="border-left-color:' + (p.ubicacion ? 'var(--green)' : 'var(--gold)') + '">'
+      + '<h4>' + (p.ubicacion
+            ? esc(p.ubicacion) + ' <span class="zbadge z-' + p.ubicacion[0] + '">' + (ZLABEL[p.ubicacion[0]] || '?') + '</span>'
+            : '⏳ SIN UBICAR') + '</h4>'
+      + row('Producto', esc(p.desc || '—'))
+      + row('SKU', esc(p.sku || '—'))
+      + row('Cantidad', '<b style="color:var(--green);font-size:15px">' + (+p.cant || 0) + '</b>')
+      + row('Lote', esc(p.lote || '—'))
+      + '<div class="rrow"><span class="lbl">Vencimiento</span><span class="val ' + vencClass(p.venc) + '">' + vencTxt(p.venc) + '</span></div>'
+      + row('OC', esc(p.oc || '—') + (p.factura ? ' · Factura ' + esc(p.factura) : ''))
+      + (p.prov ? row('Proveedor', esc(p.prov)) : '')
+      + (p.recep ? row('Recepción', esc(p.recep)) : '')
+      + (p.ubicado_ts ? row('Guardado', new Date(p.ubicado_ts).toLocaleString('es-CL')
+          + (p.ubicado_por ? ' · ' + esc(p.ubicado_por) : '')) : '')
+      + (p.ubicacion ? '' : '<p class="hint" style="margin-top:9px">Todavía no se guarda en el rack. '
+          + 'Ve a <b>INGRESO</b>, escanea esta tarja y la posición.</p>')
+      + '</div>'
+      + (it ? '<label class="fl">Lo que hay hoy en esa posición</label>' + cardHTML(it) : '');
+    return;
+  }
+
   const u = normUbic(q);
   let items, titulo;
   if (u){
@@ -929,10 +1261,19 @@ function runConsulta(q){
   out.innerHTML = '<label class="fl">' + esc(titulo) + ' · ' + total + ' unidades</label>'
     + items.map(i => cardHTML(i)).join('');
 }
+// Contenedores guardados en un registro de inventario
+function contsDe(i){
+  const a = Array.isArray(i && i.conts) ? i.conts.slice() : [];
+  if (i && i.contenedor && a.indexOf(i.contenedor) < 0) a.unshift(i.contenedor);
+  return a.map(normCont).filter(Boolean);
+}
 function cardHTML(i){
   const z = String(i.ubicacion)[0];
+  const cs = contsDe(i);
   return '<div class="rcard" style="margin-bottom:9px">'
     + '<h4>' + esc(i.ubicacion) + ' <span class="zbadge z-' + z + '">' + (ZLABEL[z] || '?') + '</span></h4>'
+    + (cs.length ? row('Contenedor', cs.map(c => '<b>' + esc(c) + '</b>').join(' · ')) : '')
+    + (i.oc ? row('OC', esc(i.oc) + (i.factura ? ' · Factura ' + esc(i.factura) : '')) : '')
     + row('SKU', esc(i.sku))
     + row('Descripción', esc(nombreDe(i.sku, i.descripcion) || '—'))
     + row('Cantidad', '<b style="color:var(--green);font-size:15px">' + (+i.cantidad || 0) + '</b>')
@@ -1017,6 +1358,14 @@ document.addEventListener('keydown', e => {
 //  SALIDA
 // ═══════════════════════════════════════════════════════════════════════
 function setSalUbic(code){
+  // Escanear la tarja del pallet lleva directo a la posición donde quedó
+  if (esCont(code)){
+    const p = plBuscar(code);
+    if (!p)            return toast('⛔ ' + normCont(code) + ' no está en este teléfono', 'err');
+    if (!p.ubicacion)  return toast('⛔ ' + p.cont + ' todavía no tiene posición', 'err');
+    toast('📦 ' + p.cont + ' está en ' + p.ubicacion);
+    code = p.ubicacion;
+  }
   const u = normUbic(code);
   if (!u){ toast('⛔ ' + code + ': ' + porQueInvalida(code), 'err'); return; }
   S.salida.ubic = u;
@@ -1038,7 +1387,9 @@ function renderSalida(){
     + '<div class="step-hdr"><h3>' + esc(i.sku) + '</h3></div>'
     + '<p class="hint" style="margin-bottom:8px">' + esc(nombreDe(i.sku, i.descripcion) || '—')
     + ' · Lote ' + esc(i.lote || '—') + '<br>Disponible: <b style="color:var(--green)">' + (+i.cantidad || 0) + '</b>'
-    + ' · Vence <span class="' + vencClass(i.fecha_venc) + '">' + vencTxt(i.fecha_venc) + '</span></p>'
+    + ' · Vence <span class="' + vencClass(i.fecha_venc) + '">' + vencTxt(i.fecha_venc) + '</span>'
+    + (contsDe(i).length ? '<br>Contenedor ' + contsDe(i).map(c => '<b>' + esc(c) + '</b>').join(' · ') : '')
+    + (i.oc ? ' · OC ' + esc(i.oc) : '') + '</p>'
     + '<button class="scanbtn red" data-sal="' + esc(i.id) + '">📤 RETIRAR…</button>'
     + '</div>').join('');
 
@@ -1063,8 +1414,11 @@ async function doSalida(id, cant){
   if (cant <= 0) return toast('Indica cuánto retiras', 'err');
   if (cant > (+it.cantidad || 0)) return toast('No hay tanto stock (' + it.cantidad + ')', 'err');
   const ubic = it.ubicacion, sku = it.sku;
+  const vacia = cant >= (+it.cantidad || 0);
+  const cs = contsDe(it);
   const ok = await guardarSalida(it, cant);
   if (!ok) return;
+  if (vacia) plRetirar(cs);
   pushLog('OUT', ubic, sku, '−' + cant);
   toast('✓ Retirado ' + cant + ' de ' + ubic);
 }
@@ -1188,11 +1542,23 @@ function localMov(tipo, ubicacion, sku, lote, delta, saldo, extra){
 async function localIngreso(rec){
   const id = docId(rec.ubicacion, rec.sku, rec.lote);
   const prev = S.inventario.find(x => x.id === id);
-  if (prev) prev.cantidad = (+prev.cantidad || 0) + rec.cantidad;
-  else S.inventario.push(Object.assign({ id }, rec, { usuario: S.user }));
+  if (prev){
+    prev.cantidad = (+prev.cantidad || 0) + rec.cantidad;
+    // varios pallets del mismo lote pueden compartir posición: se suman los códigos
+    if (rec.contenedor){
+      const cs = contsDe(prev);
+      if (cs.indexOf(rec.contenedor) < 0) cs.push(rec.contenedor);
+      prev.conts = cs; prev.contenedor = rec.contenedor;
+      prev.oc = rec.oc || prev.oc || ''; prev.factura = rec.factura || prev.factura || '';
+    }
+  }
+  else S.inventario.push(Object.assign({ id }, rec, {
+    usuario: S.user, conts: rec.contenedor ? [rec.contenedor] : []
+  }));
   const saldo = (S.inventario.find(x => x.id === id) || {}).cantidad;
   localMov('INGRESO', rec.ubicacion, rec.sku, rec.lote, rec.cantidad, saldo, {
-    descripcion: rec.descripcion || '', fecha_elab: rec.fecha_elab || '', fecha_venc: rec.fecha_venc || ''
+    descripcion: rec.descripcion || '', fecha_elab: rec.fecha_elab || '', fecha_venc: rec.fecha_venc || '',
+    contenedor: rec.contenedor || '', oc: rec.oc || '', factura: rec.factura || ''
   });
   if (!localGuardar()) return false;
   localEstado(); refreshViews();
@@ -1347,11 +1713,13 @@ async function guardarIngreso(rec){
       if (prev){
         encolar(FS.updateDoc(iRef, { cantidad: FS.increment(rec.cantidad), usuario:S.user, updatedAt: FS.serverTimestamp() }), 'ingreso');
       } else {
-        encolar(FS.setDoc(iRef, { ...rec, usuario:S.user, updatedAt: FS.serverTimestamp() }), 'ingreso');
+        encolar(FS.setDoc(iRef, { ...rec, conts: rec.contenedor ? [rec.contenedor] : [],
+          usuario:S.user, updatedAt: FS.serverTimestamp() }), 'ingreso');
         encolar(FS.setDoc(pRef, { sku: rec.sku, ubicacion: rec.ubicacion, registros: FS.increment(1) }, { merge:true }), 'posición');
       }
       encolar(FS.addDoc(FS.collection(S.db,'movimientos'),
         { tipo:'INGRESO', ubicacion:rec.ubicacion, sku:rec.sku, lote:rec.lote||'',
+          contenedor:rec.contenedor||'', oc:rec.oc||'', factura:rec.factura||'',
           delta:rec.cantidad, saldo:rec.cantidad, usuario:S.user, offline:true, ts:FS.serverTimestamp() }), 'bitácora');
       return true;
     }
@@ -1367,8 +1735,14 @@ async function guardarIngreso(rec){
         }
         if (iSnap.exists()){
           const d = iSnap.data();
+          const cs = Array.isArray(d.conts) ? d.conts.slice() : (d.contenedor ? [d.contenedor] : []);
+          if (rec.contenedor && cs.indexOf(rec.contenedor) < 0) cs.push(rec.contenedor);
           tx.update(iRef, {
             cantidad: (+d.cantidad || 0) + rec.cantidad,
+            conts: cs,
+            contenedor: rec.contenedor || d.contenedor || '',
+            oc: rec.oc || d.oc || '',
+            factura: rec.factura || d.factura || '',
             descripcion: rec.descripcion || d.descripcion || '',
             fecha_venc: rec.fecha_venc || d.fecha_venc || '',
             fecha_elab: rec.fecha_elab || d.fecha_elab || '',
@@ -1378,12 +1752,14 @@ async function guardarIngreso(rec){
           // autorreparación: registro sin candado (p. ej. carga antigua)
           if (!lock) tx.set(pRef, { sku: rec.sku, ubicacion: rec.ubicacion, registros: 1 });
         } else {
-          tx.set(iRef, { ...rec, usuario:S.user, updatedAt: FS.serverTimestamp() });
+          tx.set(iRef, { ...rec, conts: rec.contenedor ? [rec.contenedor] : [],
+                         usuario:S.user, updatedAt: FS.serverTimestamp() });
           tx.set(pRef, { sku: rec.sku, ubicacion: rec.ubicacion,
                        registros: (lock ? (lock.registros || 0) : 0) + 1 });
       }
     }));
-    mov('INGRESO', rec.ubicacion, rec.sku, rec.lote, rec.cantidad, rec.cantidad);
+    mov('INGRESO', rec.ubicacion, rec.sku, rec.lote, rec.cantidad, rec.cantidad,
+        { contenedor: rec.contenedor || '', oc: rec.oc || '', factura: rec.factura || '' });
     return true;
   } catch(e){
     if (e instanceof PosicionOcupada){
@@ -1444,9 +1820,10 @@ async function guardarConteo(it, contado, dif){
   } catch(e){ toast('No se pudo guardar: ' + e.message, 'err'); return false; }
 }
 // La bitácora nunca bloquea: se dispara y se olvida
-function mov(tipo, ubicacion, sku, lote, delta, saldo){
+function mov(tipo, ubicacion, sku, lote, delta, saldo, extra){
   encolar(FS.addDoc(FS.collection(S.db, 'movimientos'),
-    { tipo, ubicacion, sku, lote: lote || '', delta, saldo, usuario:S.user, ts: FS.serverTimestamp() }), 'bitácora');
+    Object.assign({ tipo, ubicacion, sku, lote: lote || '', delta, saldo, usuario:S.user,
+                    ts: FS.serverTimestamp() }, extra || {})), 'bitácora');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -1460,6 +1837,7 @@ $('btn-cfg').addEventListener('click', () => {
   $('cfg-app').value = c.appId || '';
   pintarModo();
   localEstado();
+  plSincronizar(false);
   $('cfg').classList.add('open');
 });
 
@@ -1510,6 +1888,26 @@ $('lc-file').addEventListener('change', e => {
   };
   r.readAsText(f);
 });
+
+// ── Cargar los pallets que envió la app de Recepción OC ───────────────
+$('pl-file').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    let d;
+    try { d = JSON.parse(r.result); }
+    catch(_){ return toast('⛔ Ese archivo no se entiende', 'err'); }
+    const lista = Array.isArray(d) ? d : (d.pallets || d.contenedores);
+    if (!Array.isArray(lista) || !lista.length) return toast('⛔ El archivo no trae pallets', 'err');
+    const n = plMerge(lista);
+    localStorage.setItem(PL_FECHA, new Date().toLocaleString('es-CL'));
+    plEstado();
+    toast('✓ ' + lista.length + ' pallet(s) leídos · ' + n + ' nuevos');
+    e.target.value = '';
+  };
+  r.readAsText(f);
+});
+$('pl-sync').addEventListener('click', () => plSincronizar(true));
 
 // ── Descargar lo capturado ────────────────────────────────────────────
 $('lc-export').addEventListener('click', () => {
@@ -1571,8 +1969,12 @@ $('cfg-save').addEventListener('click', () => {
 // ═══════════════════════════════════════════════════════════════════════
 $('who-txt').textContent = S.user || '—';
 $('in-elab').value = hoy();
+plCargar();                       // pallets de recepción: bandeja compartida + lo ya guardado
 if (esLocal()){ localCargar(); localEstado(); refreshViews(); }
 else initFirebase();
+// La recepción sigue trabajando mientras se guarda: se revisa cada tanto
+setInterval(() => plSincronizar(false), 20000);
+window.addEventListener('focus', () => plSincronizar(false));
 // Sin esto, la primera vez que el modal se abre solo (por requireDB o por
 // falta de configuración) aparecen los dos bloques a la vez y el operario
 // cree que tiene que llenar los datos de Firebase.
